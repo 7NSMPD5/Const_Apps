@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>部署週間行動予定表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+            background-color: #f5f5f5;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .date-info {
+            font-size: 14px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #45a049;
+        }
+
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #1976D2;
+        }
+
+        .btn-pdf {
+            background: #FF5722;
+            color: white;
+        }
+
+        .btn-pdf:hover {
+            background: #E64A19;
+        }
+
+        /* タブ切り替え */
+        .tab-container {
+            background: #f8f8f8;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab-buttons {
+            display: flex;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .tab-buttons::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            color: #666;
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+
+        .tab-button:hover {
+            background: #f0f0f0;
+        }
+
+        /* ステータス凡例 - 最上部に移動 */
+        .legend {
+            background: #f9f9f9;
+            padding: 12px 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .legend h4 {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .legend-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+        }
+
+        /* 日付選択エリア（日別表示用） */
+        .date-selector {
+            background: #e3f2fd;
+            padding: 15px;
+            border-bottom: 1px solid #2196F3;
+            display: none;
+        }
+
+        .date-selector.active {
+            display: block;
+        }
+
+        .date-selector h3 {
+            color: #1976D2;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .date-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .date-picker {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        /* 週間スケジュール統合レイアウト */
+        .weekly-schedule-layout {
+            background: #fff9c4;
+        }
+
+        .schedule-header {
+            background: #fff9c4;
+            padding: 12px 0;
+            text-align: center;
+            border-bottom: 1px solid rgba(245, 127, 23, 0.3);
+        }
+
+        .schedule-header h3 {
+            color: #f57f17;
+            font-size: 16px;
+            margin: 0;
+        }
+
+        /* 日付ヘッダーグリッド - 週間スケジュールと統合 */
+        .date-header-grid {
+            display: grid;
+            grid-template-columns: 100px repeat(7, 1fr);
+            gap: 0;
+            padding: 12px 20px;
+            background: #fff9c4;
+            border-bottom: 2px solid #f57f17;
+        }
+
+        .name-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: #f57f17;
+            padding: 8px;
+        }
+
+        .date-header-item {
+            text-align: center;
+            font-size: 11px;
+            padding: 8px 4px;
+            background: rgba(245, 127, 23, 0.15);
+            border-radius: 4px;
+            margin: 0 2px;
+            border: 1px solid rgba(245, 127, 23, 0.4);
+        }
+
+        .date-header-item .day {
+            font-weight: bold;
+            color: #f57f17;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .date-header-item .date {
+            font-size: 10px;
+            color: #666;
+        }
+
+        .date-header-item.today {
+            background: #f57f17;
+            color: white;
+        }
+
+        .date-header-item.today .day,
+        .date-header-item.today .date {
+            color: white;
+        }
+
+        .date-header-item.selected {
+            background: #2196F3;
+            color: white;
+        }
+
+        .date-header-item.selected .day,
+        .date-header-item.selected .date {
+            color: white;
+        }
+
+        .global-controls {
+            background: #f0f0f0;
+            padding: 8px 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .toggle-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-toggle {
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-toggle:hover {
+            background: #f5f5f5;
+        }
+
+        /* メイン表示エリア */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .main-schedule {
+            padding: 0;
+        }
+
+        .employee-row {
+            border-bottom: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .employee-row:last-child {
+            border-bottom: none;
+        }
+
+        /* 従業員ヘッダー - 日付ヘッダーと完全に整列 */
+        .employee-header {
+            display: grid;
+            grid-template-columns: 100px repeat(7, 1fr) 30px;
+            gap: 0;
+            align-items: center;
+            padding: 10px 20px;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #e0e0e0;
+            min-height: 50px;
+        }
+
+        .employee-header:hover {
+            background: #f0f0f0;
+        }
+
+        .employee-name {
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            padding: 0 8px;
+        }
+
+        .day-status {
+            text-align: center;
+            padding: 0 2px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 6px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: bold;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            text-align: center;
+            min-width: 20px;
+            max-width: 95%;
+        }
+
+        /* 勤務形態バッジのスタイル */
+        .work-flex { background-color: #e3f2fd; color: #1565c0; border: 1px solid #1565c0; }
+        .work-wfh { background-color: #f1f8e9; color: #558b2f; border: 1px solid #558b2f; }
+        .work-vacation { background-color: #e8f5e8; color: #2e7d32; border: 1px solid #2e7d32; }
+        .work-rest { background-color: #f3e5f5; color: #7b1fa2; border: 1px solid #7b1fa2; }
+        .work-trip { background-color: #fce4ec; color: #c2185b; border: 1px solid #c2185b; }
+        .work-normal { background-color: #f5f5f5; color: #666; border: 1px solid #ccc; }
+
+        .expand-icon {
+            text-align: center;
+            transition: transform 0.3s ease;
+            color: #666;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .employee-row.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .detail-schedule {
+            display: none;
+            background: white;
+            overflow: hidden;
+        }
+
+        .employee-row.expanded .detail-schedule {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 500px;
+            }
+        }
+
+        /* 詳細テーブル - 完全にグリッドに合わせる */
+        .detail-table-container {
+            display: grid;
+            grid-template-columns: 100px repeat(7, 1fr);
+            gap: 0;
+            margin: 0 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+
+        .detail-name-cell {
+            background: #f8f8f8;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            border-right: 1px solid #ddd;
+            min-height: 80px;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        .detail-day-cell {
+            border-right: 1px solid #ddd;
+            padding: 6px 2px;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            justify-content: flex-start;
+        }
+
+        .detail-day-cell:last-child {
+            border-right: none;
+        }
+
+        .schedule-item {
+            background-color: #ffe0b2;
+            color: #e65100;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 8px;
+            margin: 1px 0;
+            word-break: break-all;
+            line-height: 1.1;
+            text-align: center;
+        }
+
+        .status-meeting { background-color: #ffe0b2; color: #e65100; }
+        .status-visitor { background-color: #e1f5fe; color: #0277bd; }
+        .status-outing { background-color: #fff3e0; color: #ef6c00; }
+
+        /* 日別表示専用スタイル */
+        .daily-view {
+            padding: 0;
+        }
+
+        .daily-employee-card {
+            margin: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .daily-employee-header {
+            background: #f8f8f8;
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .daily-employee-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .daily-work-status {
+            font-size: 12px;
+        }
+
+        .daily-schedule-content {
+            padding: 12px;
+        }
+
+        .daily-schedule-item {
+            background: #f9f9f9;
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+            border-left: 4px solid #ccc;
+        }
+
+        .daily-schedule-item.status-meeting {
+            border-left-color: #e65100;
+        }
+
+        .daily-schedule-item.status-visitor {
+            border-left-color: #0277bd;
+        }
+
+        .daily-schedule-item.status-outing {
+            border-left-color: #ef6c00;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .no-schedule {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 12px;
+        }
+
+        @media print {
+            body { 
+                background: white; 
+                padding: 0; 
+            }
+            .container { 
+                box-shadow: none; 
+                border-radius: 0; 
+            }
+            .controls, .global-controls, .tab-container { 
+                display: none; 
+            }
+            .detail-schedule {
+                display: block !important;
+            }
+            .expand-icon {
+                display: none;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .header {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 18px;
+            }
+            
+            .button-group {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .btn {
+                flex: 1;
+                max-width: 80px;
+            }
+            
+            .date-header-grid {
+                grid-template-columns: 80px repeat(7, 1fr);
+                padding: 10px 15px;
+            }
+            
+            .employee-header {
+                grid-template-columns: 80px repeat(7, 1fr) 25px;
+                padding: 8px 15px;
+                min-height: 45px;
+            }
+            
+            .detail-table-container {
+                grid-template-columns: 80px repeat(7, 1fr);
+                margin: 0 15px;
+            }
+            
+            .employee-name {
+                font-size: 12px;
+                padding: 0 4px;
+            }
+            
+            .name-header {
+                font-size: 11px;
+                padding: 6px 4px;
+            }
+            
+            .status-badge {
+                font-size: 8px;
+                padding: 2px 4px;
+                min-width: 18px;
+            }
+            
+            .date-header-item {
+                font-size: 9px;
+                padding: 6px 2px;
+                margin: 0 1px;
+            }
+            
+            .date-header-item .day {
+                font-size: 9px;
+                margin-bottom: 2px;
+            }
+            
+            .date-header-item .date {
+                font-size: 8px;
+            }
+            
+            .legend {
+                padding: 8px 15px;
+            }
+            
+            .legend-items {
+                gap: 8px;
+            }
+            
+            .legend-item {
+                font-size: 9px;
+            }
+            
+            .global-controls {
+                padding: 6px 15px;
+            }
+            
+            .detail-name-cell {
+                font-size: 10px;
+                padding: 6px 2px;
+            }
+            
+            .schedule-item {
+                font-size: 7px;
+                padding: 1px 2px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .date-header-grid {
+                grid-template-columns: 60px repeat(7, 1fr);
+                padding: 8px 10px;
+            }
+            
+            .employee-header {
+                grid-template-columns: 60px repeat(7, 1fr) 20px;
+                padding: 6px 10px;
+                min-height: 40px;
+            }
+            
+            .detail-table-container {
+                grid-template-columns: 60px repeat(7, 1fr);
+                margin: 0 10px;
+            }
+            
+            .employee-name {
+                font-size: 11px;
+                padding: 0 2px;
+            }
+            
+            .name-header {
+                font-size: 10px;
+                padding: 4px 2px;
+            }
+            
+            .status-badge {
+                font-size: 7px;
+                padding: 1px 2px;
+                min-width: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>部署週間行動予定表</h1>
+            <div class="controls">
+                <div class="date-info">
+                    <span id="current-week"></span>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="updateSchedule()">
+                        📅 更新
+                    </button>
+                    <button class="btn btn-secondary" onclick="prevWeek()">
+                        ← 前週
+                    </button>
+                    <button class="btn btn-secondary" onclick="nextWeek()">
+                        次週 →
+                    </button>
+                    <button class="btn btn-pdf" onclick="exportToPDF()">
+                        📄 PDF
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- タブ切り替え -->
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="switchTab('weekly')">
+                    📅 週間一覧
+                </button>
+                <button class="tab-button" onclick="switchTab('daily')">
+                    📋 日別詳細
+                </button>
+            </div>
+        </div>
+
+        <!-- 日付選択エリア（日別表示用） -->
+        <div class="date-selector" id="date-selector">
+            <h3>📅 表示日付を選択</h3>
+            <div class="date-picker-container">
+                <label>日付:</label>
+                <input type="date" class="date-picker" id="selected-date" onchange="updateDailyView()">
+                <button class="btn btn-secondary" onclick="setToday()">今日</button>
+            </div>
+        </div>
+
+        <!-- 週間表示用 -->
+        <div class="tab-content active" id="weekly-view">
+            <!-- ステータス凡例 - 最上部に配置 -->
+            <div class="legend">
+                <h4>ステータス凡例</h4>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <div class="legend-color work-flex"></div>
+                        <span>フレックス</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color work-wfh"></div>
+                        <span>在宅勤務</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color work-vacation"></div>
+                        <span>休暇</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color work-rest"></div>
+                        <span>休み</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color work-trip"></div>
+                        <span>出張</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color status-meeting"></div>
+                        <span>会議</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color status-visitor"></div>
+                        <span>来客</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color status-outing"></div>
+                        <span>外出</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 週間スケジュールヘッダー + 日付ヘッダーグリッド（統合） -->
+            <div class="weekly-schedule-layout">
+                <div class="schedule-header">
+                    <h3>📋 週間スケジュール</h3>
+                </div>
+                
+                <div class="date-header-grid" id="date-header-grid">
+                    <div class="name-header">氏名</div>
+                    <!-- 日付項目が動的に生成される -->
+                </div>
+            </div>
+
+            <div class="global-controls">
+                <div style="font-size: 12px;">
+                    <strong>表示オプション:</strong>
+                </div>
+                <div class="toggle-buttons">
+                    <button class="btn-toggle" onclick="expandAll()">
+                        すべて展開
+                    </button>
+                    <button class="btn-toggle" onclick="collapseAll()">
+                        すべて折りたたみ
+                    </button>
+                </div>
+            </div>
+
+            <div id="weekly-schedule-container" class="main-schedule">
+                <div class="loading">
+                    週間スケジュールを読み込み中...
+                </div>
+            </div>
+        </div>
+
+        <!-- 日別表示用 -->
+        <div class="tab-content" id="daily-view">
+            <div id="daily-schedule-container" class="daily-view">
+                <div class="loading">
+                    日別スケジュールを読み込み中...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let currentWeekStart = new Date();
+        let selectedDate = new Date();
+        let employeeData = [];
+        let scheduleData = {};
+        let currentTab = 'weekly';
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeWeek();
+            loadEmployeeData();
+            setInitialDate();
+            updateSchedule();
+        });
+
+        // 週の初期化（月曜日を週の開始とする）
+        function initializeWeek() {
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            currentWeekStart = new Date(today);
+            currentWeekStart.setDate(today.getDate() + mondayOffset);
+            updateWeekDisplay();
+            updateDateHeaderGrid();
+        }
+
+        // 初期日付の設定
+        function setInitialDate() {
+            selectedDate = new Date();
+            document.getElementById('selected-date').value = formatDateForInput(selectedDate);
+        }
+
+        // 入力用日付フォーマット
+        function formatDateForInput(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // 週表示の更新
+        function updateWeekDisplay() {
+            const endDate = new Date(currentWeekStart);
+            endDate.setDate(currentWeekStart.getDate() + 6);
+            
+            const startStr = formatDate(currentWeekStart);
+            const endStr = formatDate(endDate);
+            
+            document.getElementById('current-week').textContent = 
+                `${startStr} ～ ${endStr}`;
+        }
+
+        // 日付ヘッダーグリッドの更新
+        function updateDateHeaderGrid() {
+            const days = ['月', '火', '水', '木', '金', '土', '日'];
+            const today = new Date();
+            const grid = document.getElementById('date-header-grid');
+            
+            // 氏名ヘッダーを除いた日付部分のみ更新
+            let html = '<div class="name-header">氏名</div>';
+            
+            for (let day = 0; day < 7; day++) {
+                const date = new Date(currentWeekStart);
+                date.setDate(currentWeekStart.getDate() + day);
+                
+                let className = 'date-header-item';
+                if (date.toDateString() === today.toDateString()) {
+                    className += ' today';
+                }
+                if (currentTab === 'daily' && date.toDateString() === selectedDate.toDateString()) {
+                    className += ' selected';
+                }
+                
+                html += `<div class="${className}">`;
+                html += `<span class="day">${days[day]}</span>`;
+                html += `<span class="date">${date.getMonth() + 1}/${date.getDate()}</span>`;
+                html += `</div>`;
+            }
+            
+            grid.innerHTML = html;
+        }
+
+        // 日付フォーマット
+        function formatDate(date) {
+            return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+        }
+
+        // 従業員データの読み込み
+        function loadEmployeeData() {
+            employeeData = [
+                { id: 1, name: '田中太郎', email: 'tanaka@company.com' },
+                { id: 2, name: '佐藤花子', email: 'sato@company.com' },
+                { id: 3, name: '山田次郎', email: 'yamada@company.com' },
+                { id: 4, name: '高橋美咲', email: 'takahashi@company.com' },
+                { id: 5, name: '渡辺健一', email: 'watanabe@company.com' }
+            ];
+        }
+
+        // タブ切り替え
+        function switchTab(tabName) {
+            // タブボタンの更新
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // タブコンテンツの切り替え
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-view`).classList.add('active');
+
+            // 日付選択エリアの表示切り替え
+            const dateSelector = document.getElementById('date-selector');
+            if (tabName === 'daily') {
+                dateSelector.classList.add('active');
+            } else {
+                dateSelector.classList.remove('active');
+            }
+
+            currentTab = tabName;
+            updateDateHeaderGrid();
+
+            // 対応するデータの更新
+            if (tabName === 'daily') {
+                updateDailyView();
+            }
+        }
+
+        // 今日の日付を設定
+        function setToday() {
+            selectedDate = new Date();
+            document.getElementById('selected-date').value = formatDateForInput(selectedDate);
+            updateDailyView();
+        }
+
+        // 日別表示の更新
+        function updateDailyView() {
+            const dateInput = document.getElementById('selected-date').value;
+            if (dateInput) {
+                selectedDate = new Date(dateInput + 'T00:00:00');
+                generateDailySchedule();
+                updateDateHeaderGrid();
+            }
+        }
+
+        // サンプルスケジュールデータの生成
+        function generateSampleSchedule(email, startDate, endDate) {
+            const schedules = [];
+            const statusLabels = {
+                'meeting': '企画会議',
+                'visitor': '取引先来訪',
+                'outing': '営業訪問',
+                'flex': 'フレックス勤務',
+                'wfh': '在宅勤務',
+                'vacation': '年次休暇',
+                'rest': '代休',
+                'trip': '出張'
+            };
+
+            for (let day = 0; day < 7; day++) {
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + day);
+                
+                // 平日のみスケジュールを生成
+                if (date.getDay() >= 1 && date.getDay() <= 5) {
+                    // 勤務形態の設定（全日）
+                    if (Math.random() > 0.6) { // 40%の確率で特別な勤務形態
+                        const workStatusTypes = ['flex', 'wfh', 'vacation', 'rest', 'trip'];
+                        const workStatus = workStatusTypes[Math.floor(Math.random() * workStatusTypes.length)];
+                        
+                        schedules.push({
+                            date: new Date(date),
+                            startTime: '全日',
+                            endTime: '',
+                            title: statusLabels[workStatus],
+                            status: workStatus,
+                            location: '',
+                            isWorkStatus: true
+                        });
+                    } else {
+                        // 通常勤務
+                        schedules.push({
+                            date: new Date(date),
+                            startTime: '全日',
+                            endTime: '',
+                            title: '通常勤務',
+                            status: 'normal',
+                            location: '',
+                            isWorkStatus: true
+                        });
+
+                        // 通常の時間別スケジュール
+                        const numEvents = Math.floor(Math.random() * 4) + 1;
+                        
+                        for (let i = 0; i < numEvents; i++) {
+                            const startHour = Math.floor(Math.random() * 8) + 9; // 9-16時
+                            const duration = Math.floor(Math.random() * 3) + 1; // 1-3時間
+                            const regularStatusTypes = ['meeting', 'visitor', 'outing'];
+                            const statusType = regularStatusTypes[Math.floor(Math.random() * regularStatusTypes.length)];
+                            
+                            schedules.push({
+                                date: new Date(date),
+                                startTime: `${startHour.toString().padStart(2, '0')}:00`,
+                                endTime: `${(startHour + duration).toString().padStart(2, '0')}:00`,
+                                title: statusLabels[statusType],
+                                status: statusType,
+                                location: statusType === 'meeting' ? '会議室A' : statusType === 'visitor' ? '受付' : '外出先',
+                                isWorkStatus: false
+                            });
+                        }
+                    }
+                }
+            }
+            
+            return schedules;
+        }
+
+        // Microsoft Graph API経由でOutlookスケジュールを取得
+        async function fetchOutlookSchedule(email, startDate, endDate) {
+            return generateSampleSchedule(email, startDate, endDate);
+        }
+
+        // 週間スケジュール表示の生成
+        function generateWeeklySchedule(scheduleData) {
+            let html = '';
+            
+            employeeData.forEach((employee, index) => {
+                const employeeSchedule = scheduleData[employee.email] || [];
+                
+                html += `<div class="employee-row" id="employee-${employee.id}">`;
+                
+                // 従業員ヘッダー（日付ヘッダーと完全に整列）
+                html += `<div class="employee-header" onclick="toggleEmployee(${employee.id})">`;
+                html += `<div class="employee-name">${employee.name}</div>`;
+                
+                // 各曜日の勤務形態（日付ヘッダーと整列）
+                for (let day = 0; day < 7; day++) {
+                    const date = new Date(currentWeekStart);
+                    date.setDate(currentWeekStart.getDate() + day);
+                    const workStatusEvent = employeeSchedule.find(event => 
+                        event.date.toDateString() === date.toDateString() && event.isWorkStatus
+                    );
+                    
+                    html += `<div class="day-status">`;
+                    
+                    if (workStatusEvent) {
+                        const statusClass = `work-${workStatusEvent.status}`;
+                        const shortTitle = workStatusEvent.title.length > 6 ? 
+                            workStatusEvent.title.substring(0, 4) + '..' : 
+                            workStatusEvent.title;
+                        html += `<span class="status-badge ${statusClass}" title="${workStatusEvent.title}">${shortTitle}</span>`;
+                    } else if (date.getDay() >= 1 && date.getDay() <= 5) {
+                        html += `<span class="status-badge work-normal">通常</span>`;
+                    } else {
+                        html += `<span style="color: #ccc; font-size: 9px;">-</span>`;
+                    }
+                    
+                    html += `</div>`;
+                }
+                
+                html += `<div class="expand-icon">▼</div>`;
+                html += `</div>`;
+                
+                // 詳細スケジュール（折りたたみ）
+                html += `<div class="detail-schedule">`;
+                html += generateDetailScheduleForEmployee(employee, employeeSchedule);
+                html += `</div>`;
+                
+                html += `</div>`;
+            });
+            
+            return html;
+        }
+
+        // 個別従業員の詳細スケジュール生成（完全にグリッドに整列）
+        function generateDetailScheduleForEmployee(employee, employeeSchedule) {
+            let html = '<div class="detail-table-container">';
+            
+            html += `<div class="detail-name-cell">${employee.name}<br><small>詳細予定</small></div>`;
+            
+            for (let day = 0; day < 7; day++) {
+                const date = new Date(currentWeekStart);
+                date.setDate(currentWeekStart.getDate() + day);
+                const detailEvents = employeeSchedule.filter(event => 
+                    event.date.toDateString() === date.toDateString() && !event.isWorkStatus
+                );
+                
+                html += '<div class="detail-day-cell">';
+                detailEvents.forEach(event => {
+                    const statusClass = `status-${event.status}`;
+                    html += `<div class="schedule-item ${statusClass}">`;
+                    html += `${event.startTime}-${event.endTime}<br>${event.title}`;
+                    if (event.location) {
+                        html += `<br><small>${event.location}</small>`;
+                    }
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+            html += '</div>';
+            
+            return html;
+        }
+
+        // 日別スケジュール表示の生成
+        function generateDailySchedule() {
+            let html = '';
+            
+            employeeData.forEach(employee => {
+                const employeeSchedule = scheduleData[employee.email] || [];
+                const dayEvents = employeeSchedule.filter(event => 
+                    event.date.toDateString() === selectedDate.toDateString()
+                );
+                
+                html += `<div class="daily-employee-card">`;
+                html += `<div class="daily-employee-header">`;
+                html += `<div class="daily-employee-name">${employee.name}</div>`;
+                
+                // 勤務形態の表示
+                const workStatusEvent = dayEvents.find(event => event.isWorkStatus);
+                html += `<div class="daily-work-status">`;
+                if (workStatusEvent) {
+                    const statusClass = `work-${workStatusEvent.status}`;
+                    html += `勤務形態: <span class="status-badge ${statusClass}">${workStatusEvent.title}</span>`;
+                } else if (selectedDate.getDay() >= 1 && selectedDate.getDay() <= 5) {
+                    html += `勤務形態: <span class="status-badge work-normal">通常勤務</span>`;
+                } else {
+                    html += `勤務形態: <span style="color: #999;">休日</span>`;
+                }
+                html += `</div>`;
+                html += `</div>`;
+                
+                // 詳細スケジュール
+                const detailEvents = dayEvents.filter(event => !event.isWorkStatus);
+                html += `<div class="daily-schedule-content">`;
+                if (detailEvents.length > 0) {
+                    detailEvents.forEach(event => {
+                        const statusClass = `status-${event.status}`;
+                        html += `<div class="daily-schedule-item ${statusClass}">`;
+                        html += `<strong>${event.startTime} - ${event.endTime}</strong><br>`;
+                        html += `${event.title}`;
+                        if (event.location) {
+                            html += `<br><small>📍 ${event.location}</small>`;
+                        }
+                        html += `</div>`;
+                    });
+                } else {
+                    html += `<div class="no-schedule">この日は予定がありません</div>`;
+                }
+                html += `</div>`;
+                html += `</div>`;
+            });
+            
+            document.getElementById('daily-schedule-container').innerHTML = html;
+        }
+
+        // 従業員の展開/折りたたみ
+        function toggleEmployee(employeeId) {
+            const row = document.getElementById(`employee-${employeeId}`);
+            row.classList.toggle('expanded');
+        }
+
+        // すべて展開
+        function expandAll() {
+            document.querySelectorAll('.employee-row').forEach(row => {
+                row.classList.add('expanded');
+            });
+        }
+
+        // すべて折りたたみ
+        function collapseAll() {
+            document.querySelectorAll('.employee-row').forEach(row => {
+                row.classList.remove('expanded');
+            });
+        }
+
+        // スケジュールの更新
+        async function updateSchedule() {
+            if (currentTab === 'weekly') {
+                document.getElementById('weekly-schedule-container').innerHTML = 
+                    '<div class="loading">週間スケジュールを更新中...</div>';
+            } else {
+                document.getElementById('daily-schedule-container').innerHTML = 
+                    '<div class="loading">日別スケジュールを更新中...</div>';
+            }
+
+            try {
+                scheduleData = {};
+                const endDate = new Date(currentWeekStart);
+                endDate.setDate(currentWeekStart.getDate() + 6);
+
+                // 各従業員のスケジュールを取得
+                for (const employee of employeeData) {
+                    scheduleData[employee.email] = await fetchOutlookSchedule(
+                        employee.email, 
+                        currentWeekStart, 
+                        endDate
+                    );
+                }
+
+                // 現在のタブに応じて表示を更新
+                if (currentTab === 'weekly') {
+                    const weeklyScheduleHtml = generateWeeklySchedule(scheduleData);
+                    document.getElementById('weekly-schedule-container').innerHTML = weeklyScheduleHtml;
+                } else {
+                    generateDailySchedule();
+                }
+
+            } catch (error) {
+                console.error('スケジュール更新エラー:', error);
+                const errorMsg = '<div class="loading">スケジュールの更新に失敗しました。</div>';
+                if (currentTab === 'weekly') {
+                    document.getElementById('weekly-schedule-container').innerHTML = errorMsg;
+                } else {
+                    document.getElementById('daily-schedule-container').innerHTML = errorMsg;
+                }
+            }
+        }
+
+        // 前週への移動
+        function prevWeek() {
+            currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+            updateWeekDisplay();
+            updateDateHeaderGrid();
+            updateSchedule();
+        }
+
+        // 次週への移動
+        function nextWeek() {
+            currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+            updateWeekDisplay();
+            updateDateHeaderGrid();
+            updateSchedule();
+        }
+
+        // PDF出力
+        function exportToPDF() {
+            // 週間表示の場合は全て展開してから印刷
+            if (currentTab === 'weekly') {
+                expandAll();
+            }
+            setTimeout(() => {
+                window.print();
+            }, 100);
+        }
+    </script>
+</body>
+</html>
