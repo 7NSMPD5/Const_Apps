@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勤務予定入力システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans JP', Arial, sans-serif;
+            background-color: #f8f9fa;
+            line-height: 1.4;
+            padding: 10px;
+            color: #495057;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            min-height: calc(100vh - 20px);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #495057, #6c757d);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            font-weight: normal;
+        }
+        
+        .main-content {
+            display: flex;
+            height: calc(100vh - 70px);
+        }
+        
+        .sidebar {
+            width: 180px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            padding: 15px 10px;
+            overflow-y: auto;
+        }
+        
+        .content-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .tab-nav {
+            list-style: none;
+        }
+        
+        .tab-nav li {
+            margin-bottom: 6px;
+        }
+        
+        .tab-nav button {
+            width: 100%;
+            padding: 8px 12px;
+            border: none;
+            background: white;
+            text-align: left;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #6c757d;
+            transition: all 0.2s;
+            border: 1px solid #e9ecef;
+        }
+        
+        .tab-nav button.active {
+            background: #495057;
+            color: white;
+            border-color: #495057;
+        }
+        
+        .tab-nav button:hover {
+            background: #e9ecef;
+        }
+        
+        .tab-nav button.active:hover {
+            background: #343a40;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            background: #fdfdfe;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: normal;
+            margin-bottom: 15px;
+            color: #6c757d;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 8px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-weight: normal;
+            margin-bottom: 5px;
+            color: #6c757d;
+            font-size: 13px;
+        }
+        
+        input, select, textarea {
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            background: white;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #6c757d;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .compact-time-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .time-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .time-group label {
+            margin: 0;
+            font-size: 12px;
+            min-width: 50px;
+            color: #6c757d;
+        }
+        
+        .compact-time-input-group {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        
+        .compact-time-input {
+            width: 70px;
+            text-align: center;
+            padding: 6px;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+        
+        .compact-time-btn {
+            width: 22px;
+            height: 22px;
+            border: 1px solid #dee2e6;
+            background: #f8f9fa;
+            cursor: pointer;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #6c757d;
+        }
+        
+        .compact-time-btn:hover {
+            background: #e9ecef;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #495057;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #343a40;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: #138496;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+        
+        .hours-display {
+            font-size: 16px;
+            color: #28a745;
+            text-align: center;
+            padding: 10px;
+            background: #f8fff8;
+            border-radius: 4px;
+            margin: 10px 0;
+            border: 1px solid #e8f5e8;
+        }
+        
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background: white;
+            transition: all 0.2s;
+        }
+        
+        .task-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .task-item.dragging {
+            opacity: 0.5;
+            transform: rotate(2deg);
+        }
+        
+        .task-item.drag-over {
+            border-color: #495057;
+            background: #f1f3f4;
+        }
+        
+        .task-item.time-conflict {
+            border-color: #dc3545;
+            background: #fff5f5;
+        }
+        
+        .task-item.lunch-overlap {
+            border-color: #ffc107;
+            background: #fffbf0;
+        }
+        
+        .task-item.template-task {
+            border-color: #17a2b8;
+            background: #f0f9ff;
+        }
+        
+        .drag-handle {
+            cursor: grab;
+            color: #dee2e6;
+            font-size: 14px;
+            min-width: 16px;
+        }
+        
+        .drag-handle:hover {
+            color: #6c757d;
+        }
+        
+        .task-name-input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        
+        .task-time-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .time-display {
+            font-size: 12px;
+            color: #6c757d;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .time-display.lunch-warning {
+            color: #856404;
+            font-weight: bold;
+        }
+        
+        .duration-display {
+            font-size: 12px;
+            color: #6c757d;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .output-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        
+        .output-text {
+            width: 100%;
+            height: 300px;
+            font-family: monospace;
+            font-size: 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 12px;
+            background: white;
+            white-space: pre-wrap;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .task-list {
+            min-height: 200px;
+        }
+        
+        .add-task-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .quick-tasks {
+            margin-bottom: 15px;
+        }
+        
+        .quick-task-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        
+        .quick-task-btn {
+            padding: 4px 8px;
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #495057;
+            transition: all 0.2s;
+        }
+        
+        .quick-task-btn:hover {
+            background: #495057;
+            color: white;
+        }
+        
+        .task-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .template-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 4px;
+            border: 1px solid #bbdefb;
+        }
+        
+        .alert {
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .weekday-indicator {
+            font-size: 12px;
+            color: #17a2b8;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>勤務予定入力システム</h1>
+        </div>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <ul class="tab-nav">
+                    <li><button class="active" data-tab="basic">基本情報</button></li>
+                    <li><button data-tab="tasks">タスク予定</button></li>
+                    <li><button data-tab="output">出力</button></li>
+                    <li><button data-tab="template">テンプレート</button></li>
+                </ul>
+            </div>
+            
+            <div class="content-area">
+                <!-- 基本情報タブ -->
+                <div id="basic-tab" class="tab-content active">
+                    <div class="section">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>名前</label>
+                                <input type="text" id="employeeName" value="山本" style="width: 150px;">
+                            </div>
+                            <div class="form-group">
+                                <label>勤務形態</label>
+                                <select id="workType" style="width: 150px;">
+                                    <option value="本社勤務">本社勤務</option>
+                                    <option value="在宅勤務">在宅勤務</option>
+                                    <option value="その他">その他</option>
+                                </select>
+                                <input type="text" id="customWorkType" style="display:none; margin-top:5px; width: 150px;" placeholder="勤務形態を入力">
+                            </div>
+                            <div class="form-group">
+                                <label>日付</label>
+                                <input type="date" id="workDate" style="width: 150px;">
+                            </div>
+                            <div class="form-group">
+                                <label>曜日</label>
+                                <input type="text" id="dayOfWeek" readonly style="background:#f8f9fa; width: 80px;">
+                            </div>
+                        </div>
+                        
+                        <!-- 標準スケジュール読み込み -->
+                        <div class="template-controls">
+                            <button class="btn btn-info" onclick="loadDayTemplate()">この曜日の標準スケジュール読み込み</button>
+                            <span id="templateStatus" class="weekday-indicator"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="section">
+                        <div class="section-title">就業時間</div>
+                        <div class="compact-time-section">
+                            <div class="time-group">
+                                <label>開始</label>
+                                <div class="compact-time-input-group">
+                                    <button class="compact-time-btn" onclick="adjustTime('startTime', -15)">◀</button>
+                                    <input type="text" id="startTime" class="compact-time-input" value="08:30" readonly>
+                                    <button class="compact-time-btn" onclick="adjustTime('startTime', 15)">▶</button>
+                                </div>
+                            </div>
+                            
+                            <div class="time-group">
+                                <label>昼休開始</label>
+                                <div class="compact-time-input-group">
+                                    <button class="compact-time-btn" onclick="adjustTime('lunchStart', -15)">◀</button>
+                                    <input type="text" id="lunchStart" class="compact-time-input" value="12:00" readonly>
+                                    <button class="compact-time-btn" onclick="adjustTime('lunchStart', 15)">▶</button>
+                                </div>
+                            </div>
+                            
+                            <div class="time-group">
+                                <label>昼休終了</label>
+                                <div class="compact-time-input-group">
+                                    <button class="compact-time-btn" onclick="adjustTime('lunchEnd', -15)">◀</button>
+                                    <input type="text" id="lunchEnd" class="compact-time-input" value="13:00" readonly>
+                                    <button class="compact-time-btn" onclick="adjustTime('lunchEnd', 15)">▶</button>
+                                </div>
+                            </div>
+                            
+                            <div class="time-group">
+                                <label>終了</label>
+                                <div class="compact-time-input-group">
+                                    <button class="compact-time-btn" onclick="adjustTime('endTime', -15)">◀</button>
+                                    <input type="text" id="endTime" class="compact-time-input" value="17:30" readonly>
+                                    <button class="compact-time-btn" onclick="adjustTime('endTime', 15)">▶</button>
+                                </div>
+                            </div>
+                            
+                            <div class="hours-display">
+                                予定総時間: <span id="totalHours">8.0H</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- タスク予定タブ -->
+                <div id="tasks-tab" class="tab-content">
+                    <!-- よく使うタスクのクイック追加 -->
+                    <div class="add-task-section">
+                        <div class="quick-tasks">
+                            <div style="font-size: 13px; color: #6c757d; margin-bottom: 8px;">よく使うタスク</div>
+                            <div class="quick-task-buttons" id="quickTaskButtons"></div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>タスク名</label>
+                                <input type="text" id="newTaskName" placeholder="タスク名を入力" style="width: 300px;">
+                            </div>
+                            <div class="form-group">
+                                <label>所要時間（分）</label>
+                                <input type="number" id="newTaskDuration" value="60" min="15" step="15" style="width: 80px;">
+                            </div>
+                            <button class="btn btn-primary" onclick="addTask()">追加</button>
+                        </div>
+                    </div>
+                    
+                    <!-- タスク操作ツール -->
+                    <div class="section">
+                        <div class="task-controls">
+                            <button class="btn btn-secondary btn-sm" onclick="sortTasksByTime()">時間順に並び替え</button>
+                            <button class="btn btn-warning btn-sm" onclick="autoAdjustTimes()">時間を自動調整</button>
+                            <button class="btn btn-info btn-sm" onclick="detectConflicts()">重複チェック</button>
+                            <button class="btn btn-success btn-sm" onclick="saveAsTemplate()">この曜日の標準スケジュールとして保存</button>
+                        </div>
+                        <div id="taskAlerts"></div>
+                    </div>
+                    
+                    <div class="section">
+                        <div class="section-title">タスク一覧（ドラッグで並び替え可能）</div>
+                        <div id="taskList" class="task-list"></div>
+                    </div>
+                </div>
+                
+                <!-- 出力タブ -->
+                <div id="output-tab" class="tab-content">
+                    <div class="output-section">
+                        <div class="section-title">出力テキスト</div>
+                        <div style="margin-bottom: 15px;">
+                            <button class="btn btn-success" onclick="generateOutput()">出力生成</button>
+                            <button class="btn btn-secondary" onclick="copyToClipboard()">コピー</button>
+                        </div>
+                        <textarea id="outputText" class="output-text" readonly placeholder="「出力生成」ボタンを押すと、コピー用のテキストが生成されます"></textarea>
+                    </div>
+                </div>
+                
+                <!-- テンプレート管理タブ -->
+                <div id="template-tab" class="tab-content">
+                    <div class="section">
+                        <div class="section-title">標準スケジュール管理</div>
+                        
+                        <div class="form-row" style="margin-bottom: 20px;">
+                            <button class="btn btn-primary" onclick="exportAllTemplates()">全曜日テンプレートをJSONエクスポート</button>
+                            <button class="btn btn-primary" onclick="exportAllTemplatesCSV()">全曜日テンプレートをCSVエクスポート</button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('jsonFileInput').click()">JSONファイル読み込み</button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('csvFileInput').click()">CSVファイル読み込み</button>
+                            <input type="file" id="jsonFileInput" class="file-input" accept=".json" onchange="importJSONTemplates(event)">
+                            <input type="file" id="csvFileInput" class="file-input" accept=".csv" onchange="importCSVTemplates(event)">
+                        </div>
+                        
+                        <div id="templateList"></div>
+                        
+                        <div style="margin-top: 20px;">
+                            <button class="btn btn-danger" onclick="clearAllTemplates()">全テンプレートクリア</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+        const weekdaysEn = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        let tasks = [];
+        let taskIdCounter = 1;
+        let draggedTaskId = null;
+        
+        // 曜日別テンプレート（LocalStorageに保存）
+        let dayTemplates = {};
+        
+        // よく使うタスクマスタ
+        const quickTasks = [
+            { name: '作業', duration: 120 },
+            { name: '社内打合せ', duration: 60 },
+            { name: '社外打合せ', duration: 90 },
+            { name: '議事入力', duration: 30 },
+            { name: 'タスク対応', duration: 60 },
+            { name: '大福帳入力', duration: 15 },
+            { name: 'DCC全体MTG', duration: 60 },
+            { name: '所内会議', duration: 60 }
+        ];
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTemplates();
+            const today = new Date();
+            document.getElementById('workDate').value = today.toISOString().split('T')[0];
+            updateDayOfWeek();
+            updateTotalHours();
+            renderQuickTaskButtons();
+            setupEventListeners();
+            updateTemplateStatus();
+            renderTemplateList();
+        });
+        
+        // ローカルストレージからテンプレート読み込み
+        function loadTemplates() {
+            const stored = localStorage.getItem('dayTemplates');
+            if (stored) {
+                dayTemplates = JSON.parse(stored);
+            }
+        }
+        
+        // ローカルストレージにテンプレート保存
+        function saveTemplates() {
+            localStorage.setItem('dayTemplates', JSON.stringify(dayTemplates));
+        }
+        
+        // イベントリスナーの設定
+        function setupEventListeners() {
+            document.querySelectorAll('.tab-nav button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    showTab(tabName);
+                });
+            });
+            
+            document.getElementById('workType').addEventListener('change', function() {
+                const customInput = document.getElementById('customWorkType');
+                if (this.value === 'その他') {
+                    customInput.style.display = 'block';
+                } else {
+                    customInput.style.display = 'none';
+                }
+            });
+            
+            document.getElementById('workDate').addEventListener('change', function() {
+                updateDayOfWeek();
+                updateTemplateStatus();
+            });
+            
+            ['startTime', 'lunchStart', 'lunchEnd', 'endTime'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('change', function() {
+                        updateTotalHours();
+                        checkLunchTimeOverlaps();
+                    });
+                }
+            });
+            
+            document.getElementById('newTaskName').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addTask();
+                }
+            });
+        }
+        
+        // タブ切り替え
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-nav button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            if (tabName === 'template') {
+                renderTemplateList();
+            }
+        }
+        
+        // 曜日更新
+        function updateDayOfWeek() {
+            const dateInput = document.getElementById('workDate');
+            const dayOfWeekInput = document.getElementById('dayOfWeek');
+            
+            if (dateInput.value) {
+                const date = new Date(dateInput.value);
+                dayOfWeekInput.value = `(${weekdays[date.getDay()]})`;
+                updateTemplateStatus();
+            }
+        }
+        
+        // テンプレートの状態表示更新
+        function updateTemplateStatus() {
+            const dateInput = document.getElementById('workDate');
+            const statusElement = document.getElementById('templateStatus');
+            
+            if (dateInput.value) {
+                const date = new Date(dateInput.value);
+                const dayOfWeek = date.getDay();
+                const dayName = weekdays[dayOfWeek];
+                const dayKey = weekdaysEn[dayOfWeek];
+                
+                if (dayTemplates[dayKey] && dayTemplates[dayKey].length > 0) {
+                    statusElement.textContent = `${dayName}曜日の標準スケジュール: ${dayTemplates[dayKey].length}件`;
+                    statusElement.style.color = '#28a745';
+                } else {
+                    statusElement.textContent = `${dayName}曜日の標準スケジュール: 未登録`;
+                    statusElement.style.color = '#6c757d';
+                }
+            }
+        }
+        
+        // 時間調整
+        function adjustTime(elementId, minutes) {
+            const element = document.getElementById(elementId);
+            const currentTime = element.value;
+            const [hours, mins] = currentTime.split(':').map(Number);
+            
+            const totalMinutes = hours * 60 + mins + minutes;
+            const newHours = Math.floor(totalMinutes / 60);
+            const newMins = totalMinutes % 60;
+            
+            if (newHours >= 0 && newHours <= 23) {
+                element.value = `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
+                updateTotalHours();
+                checkLunchTimeOverlaps();
+            }
+        }
+        
+        // 総時間計算
+        function updateTotalHours() {
+            const startTime = document.getElementById('startTime').value;
+            const lunchStart = document.getElementById('lunchStart').value;
+            const lunchEnd = document.getElementById('lunchEnd').value;
+            const endTime = document.getElementById('endTime').value;
+            
+            const start = timeToMinutes(startTime);
+            const lStart = timeToMinutes(lunchStart);
+            const lEnd = timeToMinutes(lunchEnd);
+            const end = timeToMinutes(endTime);
+            
+            const morningHours = (lStart - start) / 60;
+            const afternoonHours = (end - lEnd) / 60;
+            const totalHours = morningHours + afternoonHours;
+            
+            document.getElementById('totalHours').textContent = `${totalHours.toFixed(1)}H`;
+        }
+        
+        // 時間を分に変換
+        function timeToMinutes(timeString) {
+            const [hours, minutes] = timeString.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+        
+        // 分を時間に変換
+        function minutesToTime(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+        }
+        
+        // 昼休み時間チェック
+        function isLunchTime(startMinutes, duration) {
+            const lunchStart = timeToMinutes(document.getElementById('lunchStart').value);
+            const lunchEnd = timeToMinutes(document.getElementById('lunchEnd').value);
+            const taskEnd = startMinutes + duration;
+            
+            return (startMinutes < lunchEnd && taskEnd > lunchStart);
+        }
+        
+        // 昼休み時間を避けた次の利用可能時間を取得
+        function getNextAvailableTime() {
+            if (tasks.length === 0) {
+                return document.getElementById('startTime').value;
+            }
+            
+            const sortedTasks = [...tasks].sort((a, b) => 
+                timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
+            );
+            
+            const lastTask = sortedTasks[sortedTasks.length - 1];
+            let nextTime = timeToMinutes(lastTask.startTime) + lastTask.duration;
+            
+            const lunchStart = timeToMinutes(document.getElementById('lunchStart').value);
+            const lunchEnd = timeToMinutes(document.getElementById('lunchEnd').value);
+            
+            if (nextTime >= lunchStart && nextTime < lunchEnd) {
+                nextTime = lunchEnd;
+            }
+            
+            return minutesToTime(nextTime);
+        }
+        
+        // 昼休み時間を避けてタスク時間を調整
+        function adjustTaskForLunchTime(task) {
+            const lunchStart = timeToMinutes(document.getElementById('lunchStart').value);
+            const lunchEnd = timeToMinutes(document.getElementById('lunchEnd').value);
+            const taskStart = timeToMinutes(task.startTime);
+            const taskEnd = taskStart + task.duration;
+            
+            if (isLunchTime(taskStart, task.duration)) {
+                if (taskStart < lunchStart && taskEnd > lunchEnd) {
+                    const morningDuration = lunchStart - taskStart;
+                    const afternoonDuration = taskEnd - lunchEnd;
+                    
+                    if (morningDuration >= 15) {
+                        task.duration = morningDuration;
+                        
+                        if (afternoonDuration >= 15) {
+                            const afternoonTask = {
+                                id: taskIdCounter++,
+                                name: task.name + ' (続き)',
+                                startTime: minutesToTime(lunchEnd),
+                                duration: afternoonDuration
+                            };
+                            tasks.push(afternoonTask);
+                        }
+                    } else {
+                        task.startTime = minutesToTime(lunchEnd);
+                    }
+                } else if (taskStart < lunchEnd && taskEnd > lunchStart) {
+                    if (taskStart < lunchStart) {
+                        task.duration = lunchStart - taskStart;
+                    } else {
+                        task.startTime = minutesToTime(lunchEnd);
+                    }
+                }
+            }
+        }
+        
+        // 昼休み時間の重複をチェック
+        function checkLunchTimeOverlaps() {
+            tasks.forEach(task => {
+                const taskStart = timeToMinutes(task.startTime);
+                if (isLunchTime(taskStart, task.duration)) {
+                    // 昼休み重複の警告スタイルを適用
+                }
+            });
+            renderTasks();
+        }
+        
+        // クイックタスクボタンを描画
+        function renderQuickTaskButtons() {
+            const container = document.getElementById('quickTaskButtons');
+            container.innerHTML = '';
+            
+            quickTasks.forEach(quickTask => {
+                const button = document.createElement('button');
+                button.className = 'quick-task-btn';
+                button.textContent = `${quickTask.name} (${quickTask.duration}分)`;
+                button.onclick = () => addQuickTask(quickTask.name, quickTask.duration);
+                container.appendChild(button);
+            });
+        }
+        
+        // クイックタスク追加
+        function addQuickTask(name, duration) {
+            const startTime = getNextAvailableTime();
+            const task = {
+                id: taskIdCounter++,
+                name: name,
+                startTime: startTime,
+                duration: duration
+            };
+            
+            adjustTaskForLunchTime(task);
+            tasks.push(task);
+            renderTasks();
+        }
+        
+        // タスク追加
+        function addTask() {
+            const taskName = document.getElementById('newTaskName').value.trim();
+            const duration = parseInt(document.getElementById('newTaskDuration').value);
+            
+            if (!taskName) {
+                alert('タスク名を入力してください。');
+                return;
+            }
+            
+            const startTime = getNextAvailableTime();
+            const task = {
+                id: taskIdCounter++,
+                name: taskName,
+                startTime: startTime,
+                duration: duration
+            };
+            
+            adjustTaskForLunchTime(task);
+            tasks.push(task);
+            renderTasks();
+            
+            document.getElementById('newTaskName').value = '';
+            document.getElementById('newTaskDuration').value = '60';
+        }
+        
+        // 標準スケジュールとして保存
+        function saveAsTemplate() {
+            const dateInput = document.getElementById('workDate');
+            if (!dateInput.value) {
+                alert('日付を選択してください。');
+                return;
+            }
+            
+            if (tasks.length === 0) {
+                alert('保存するタスクがありません。');
+                return;
+            }
+            
+            const date = new Date(dateInput.value);
+            const dayOfWeek = date.getDay();
+            const dayKey = weekdaysEn[dayOfWeek];
+            const dayName = weekdays[dayOfWeek];
+            
+            // テンプレート用データを作成（IDは除外）
+            const templateTasks = tasks.map(task => ({
+                name: task.name,
+                startTime: task.startTime,
+                duration: task.duration
+            }));
+            
+            dayTemplates[dayKey] = templateTasks;
+            saveTemplates();
+            
+            showAlert(`${dayName}曜日の標準スケジュールとして保存しました（${templateTasks.length}件）`, 'success');
+            updateTemplateStatus();
+            renderTemplateList();
+        }
+        
+        // 曜日テンプレート読み込み
+        function loadDayTemplate() {
+            const dateInput = document.getElementById('workDate');
+            if (!dateInput.value) {
+                alert('日付を選択してください。');
+                return;
+            }
+            
+            const date = new Date(dateInput.value);
+            const dayOfWeek = date.getDay();
+            const dayKey = weekdaysEn[dayOfWeek];
+            const dayName = weekdays[dayOfWeek];
+            
+            if (!dayTemplates[dayKey] || dayTemplates[dayKey].length === 0) {
+                showAlert(`${dayName}曜日の標準スケジュールは登録されていません。`, 'warning');
+                return;
+            }
+            
+            if (tasks.length > 0) {
+                if (!confirm('現在のタスクをクリアして標準スケジュールを読み込みますか？')) {
+                    return;
+                }
+            }
+            
+            // テンプレートからタスクを復元
+            tasks = [];
+            taskIdCounter = 1;
+            
+            dayTemplates[dayKey].forEach(templateTask => {
+                const task = {
+                    id: taskIdCounter++,
+                    name: templateTask.name,
+                    startTime: templateTask.startTime,
+                    duration: templateTask.duration
+                };
+                tasks.push(task);
+            });
+            
+            renderTasks();
+            showAlert(`${dayName}曜日の標準スケジュールを読み込みました（${tasks.length}件）`, 'success');
+        }
+        
+        // 全テンプレートをJSON形式でエクスポート
+        function exportAllTemplates() {
+            const data = {
+                exportDate: new Date().toISOString(),
+                version: '1.0',
+                templates: dayTemplates
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `schedule_templates_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showAlert('テンプレートをJSONファイルでエクスポートしました。', 'success');
+        }
+        
+        // 全テンプレートをCSV形式でエクスポート
+        function exportAllTemplatesCSV() {
+            let csv = '曜日,タスク名,開始時間,所要時間(分)\n';
+            
+            weekdaysEn.forEach((dayKey, index) => {
+                const dayName = weekdays[index];
+                if (dayTemplates[dayKey] && dayTemplates[dayKey].length > 0) {
+                    dayTemplates[dayKey].forEach(task => {
+                        csv += `${dayName},${task.name},${task.startTime},${task.duration}\n`;
+                    });
+                }
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `schedule_templates_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showAlert('テンプレートをCSVファイルでエクスポートしました。', 'success');
+        }
+        
+        // JSONファイル読み込み
+        function importJSONTemplates(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (data.templates) {
+                        dayTemplates = data.templates;
+                        saveTemplates();
+                        showAlert('JSONファイルからテンプレートを読み込みました。', 'success');
+                        updateTemplateStatus();
+                        renderTemplateList();
+                    } else {
+                        alert('無効なJSONファイル形式です。');
+                    }
+                } catch (error) {
+                    alert('JSONファイルの読み込みに失敗しました。');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+        
+        // CSVファイル読み込み
+        function importCSVTemplates(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csv = e.target.result;
+                    const lines = csv.split('\n');
+                    const newTemplates = {};
+                    
+                    // ヘッダー行をスキップ
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        const [dayName, taskName, startTime, duration] = line.split(',');
+                        
+                        if (dayName && taskName && startTime && duration) {
+                            const dayIndex = weekdays.indexOf(dayName);
+                            if (dayIndex >= 0) {
+                                const dayKey = weekdaysEn[dayIndex];
+                                
+                                if (!newTemplates[dayKey]) {
+                                    newTemplates[dayKey] = [];
+                                }
+                                
+                                newTemplates[dayKey].push({
+                                    name: taskName,
+                                    startTime: startTime,
+                                    duration: parseInt(duration)
+                                });
+                            }
+                        }
+                    }
+                    
+                    dayTemplates = newTemplates;
+                    saveTemplates();
+                    showAlert('CSVファイルからテンプレートを読み込みました。', 'success');
+                    updateTemplateStatus();
+                    renderTemplateList();
+                } catch (error) {
+                    alert('CSVファイルの読み込みに失敗しました。');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+        
+        // 全テンプレートクリア
+        function clearAllTemplates() {
+            if (confirm('すべての標準スケジュールを削除しますか？この操作は取り消せません。')) {
+                dayTemplates = {};
+                saveTemplates();
+                showAlert('すべての標準スケジュールを削除しました。', 'info');
+                updateTemplateStatus();
+                renderTemplateList();
+            }
+        }
+        
+        // テンプレート一覧を表示
+        function renderTemplateList() {
+            const container = document.getElementById('templateList');
+            container.innerHTML = '';
+            
+            weekdaysEn.forEach((dayKey, index) => {
+                const dayName = weekdays[index];
+                const templates = dayTemplates[dayKey] || [];
+                
+                const sectionHtml = `
+                    <div class="section">
+                        <div class="section-title">${dayName}曜日 (${templates.length}件)</div>
+                        <div id="template-${dayKey}">
+                            ${templates.length === 0 ? 
+                                '<div style="color: #6c757d; font-style: italic;">登録されているスケジュールはありません</div>' :
+                                templates.map((task, taskIndex) => 
+                                    `<div style="display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid #e9ecef; border-radius: 4px; margin-bottom: 5px; background: white;">
+                                        <span style="flex: 1;">${task.name}</span>
+                                        <span style="color: #6c757d; font-size: 12px;">${task.startTime} (${task.duration}分)</span>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteTemplateTask('${dayKey}', ${taskIndex})">削除</button>
+                                    </div>`
+                                ).join('')
+                            }
+                        </div>
+                        ${templates.length > 0 ? 
+                            `<button class="btn btn-danger btn-sm" style="margin-top: 10px;" onclick="clearDayTemplate('${dayKey}')">この曜日をクリア</button>` : 
+                            ''
+                        }
+                    </div>
+                `;
+                
+                container.insertAdjacentHTML('beforeend', sectionHtml);
+            });
+        }
+        
+        // 特定の曜日のテンプレートをクリア
+        function clearDayTemplate(dayKey) {
+            const dayName = weekdays[weekdaysEn.indexOf(dayKey)];
+            if (confirm(`${dayName}曜日の標準スケジュールを削除しますか？`)) {
+                delete dayTemplates[dayKey];
+                saveTemplates();
+                showAlert(`${dayName}曜日の標準スケジュールを削除しました。`, 'info');
+                updateTemplateStatus();
+                renderTemplateList();
+            }
+        }
+        
+        // 特定のテンプレートタスクを削除
+        function deleteTemplateTask(dayKey, taskIndex) {
+            const dayName = weekdays[weekdaysEn.indexOf(dayKey)];
+            if (confirm(`${dayName}曜日のタスクを削除しますか？`)) {
+                dayTemplates[dayKey].splice(taskIndex, 1);
+                
+                if (dayTemplates[dayKey].length === 0) {
+                    delete dayTemplates[dayKey];
+                }
+                
+                saveTemplates();
+                showAlert('タスクを削除しました。', 'info');
+                updateTemplateStatus();
+                renderTemplateList();
+            }
+        }
+        
+        // タスク削除
+        function deleteTask(taskId) {
+            tasks = tasks.filter(task => task.id !== taskId);
+            renderTasks();
+        }
+        
+        // タスク複製
+        function duplicateTask(taskId) {
+            const originalTask = tasks.find(t => t.id === taskId);
+            if (!originalTask) return;
+            
+            const newTask = {
+                id: taskIdCounter++,
+                name: originalTask.name,
+                startTime: getNextAvailableTime(),
+                duration: originalTask.duration
+            };
+            
+            adjustTaskForLunchTime(newTask);
+            tasks.push(newTask);
+            renderTasks();
+        }
+        
+        // タスク時間調整
+        function adjustTaskTime(taskId, type, change) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+            
+            if (type === 'start') {
+                const currentMinutes = timeToMinutes(task.startTime);
+                let newMinutes = currentMinutes + change;
+                
+                const lunchStart = timeToMinutes(document.getElementById('lunchStart').value);
+                const lunchEnd = timeToMinutes(document.getElementById('lunchEnd').value);
+                const taskEnd = newMinutes + task.duration;
+                
+                if (newMinutes < lunchStart && taskEnd > lunchStart) {
+                    if (change > 0) {
+                        newMinutes = lunchEnd;
+                    } else {
+                        newMinutes = lunchStart - task.duration;
+                    }
+                }
+                
+                if (newMinutes >= 0 && newMinutes <= 1440 - task.duration) {
+                    task.startTime = minutesToTime(newMinutes);
+                }
+            } else if (type === 'duration') {
+                const newDuration = Math.max(15, task.duration + change);
+                const taskStart = timeToMinutes(task.startTime);
+                
+                if (!isLunchTime(taskStart, newDuration)) {
+                    task.duration = newDuration;
+                } else {
+                    const lunchStart = timeToMinutes(document.getElementById('lunchStart').value);
+                    if (taskStart < lunchStart) {
+                        task.duration = Math.min(newDuration, lunchStart - taskStart);
+                    }
+                }
+            }
+            
+            renderTasks();
+            checkLunchTimeOverlaps();
+        }
+        
+        // タスク名編集
+        function editTaskName(taskId, newName) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.name = newName.trim();
+                renderTasks();
+            }
+        }
+        
+        // 時間順に並び替え
+        function sortTasksByTime() {
+            tasks.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+            renderTasks();
+        }
+        
+        // 時間の自動調整
+        function autoAdjustTimes() {
+            if (tasks.length === 0) return;
+            
+            const sortedTasks = [...tasks].sort((a, b) => 
+                timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
+            );
+            
+            const startTime = timeToMinutes(document.getElementById('startTime').value);
+            const lunchStart = timeToMinutes(document.getElementById('lunchStart').value);
+            const lunchEnd = timeToMinutes(document.getElementById('lunchEnd').value);
+            
+            let currentTime = startTime;
+            
+            sortedTasks.forEach(task => {
+                if (currentTime < lunchStart && currentTime + task.duration > lunchStart) {
+                    if (currentTime + task.duration <= lunchEnd) {
+                        currentTime = lunchEnd;
+                    } else {
+                        const beforeLunch = lunchStart - currentTime;
+                        if (beforeLunch >= 15) {
+                            task.duration = beforeLunch;
+                            const remainingDuration = task.duration - beforeLunch;
+                            if (remainingDuration >= 15) {
+                                const newTask = {
+                                    id: taskIdCounter++,
+                                    name: task.name + ' (続き)',
+                                    startTime: minutesToTime(lunchEnd),
+                                    duration: remainingDuration
+                                };
+                                tasks.push(newTask);
+                            }
+                            task.startTime = minutesToTime(currentTime);
+                            currentTime = lunchStart;
+                            return;
+                        } else {
+                            currentTime = lunchEnd;
+                        }
+                    }
+                }
+                
+                task.startTime = minutesToTime(currentTime);
+                currentTime += task.duration;
+            });
+            
+            tasks = sortedTasks;
+            renderTasks();
+            showAlert('時間を自動調整しました（昼休み時間を考慮）。', 'info');
+        }
+        
+        // 重複チェック
+        function detectConflicts() {
+            const conflicts = [];
+            const lunchOverlaps = [];
+            const sortedTasks = [...tasks].sort((a, b) => 
+                timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
+            );
+            
+            for (let i = 0; i < sortedTasks.length - 1; i++) {
+                const currentTask = sortedTasks[i];
+                const nextTask = sortedTasks[i + 1];
+                
+                const currentEnd = timeToMinutes(currentTask.startTime) + currentTask.duration;
+                const nextStart = timeToMinutes(nextTask.startTime);
+                
+                if (currentEnd > nextStart) {
+                    conflicts.push({
+                        task1: currentTask,
+                        task2: nextTask,
+                        overlap: currentEnd - nextStart
+                    });
+                }
+            }
+            
+            sortedTasks.forEach(task => {
+                const taskStart = timeToMinutes(task.startTime);
+                if (isLunchTime(taskStart, task.duration)) {
+                    lunchOverlaps.push(task);
+                }
+            });
+            
+            let message = '';
+            if (conflicts.length > 0) {
+                message += '時間の重複が検出されました:\n';
+                conflicts.forEach(conflict => {
+                    message += `• ${conflict.task1.name} と ${conflict.task2.name} (${conflict.overlap}分重複)\n`;
+                });
+            }
+            
+            if (lunchOverlaps.length > 0) {
+                if (message) message += '\n';
+                message += '昼休み時間との重複が検出されました:\n';
+                lunchOverlaps.forEach(task => {
+                    message += `• ${task.name}\n`;
+                });
+            }
+            
+            if (conflicts.length > 0 || lunchOverlaps.length > 0) {
+                showAlert(message, 'warning');
+                
+                renderTasks();
+                conflicts.forEach(conflict => {
+                    document.querySelector(`[data-task-id="${conflict.task1.id}"]`)?.classList.add('time-conflict');
+                    document.querySelector(`[data-task-id="${conflict.task2.id}"]`)?.classList.add('time-conflict');
+                });
+                lunchOverlaps.forEach(task => {
+                    document.querySelector(`[data-task-id="${task.id}"]`)?.classList.add('lunch-overlap');
+                });
+            } else {
+                showAlert('時間の重複はありません。', 'info');
+            }
+        }
+        
+        // アラート表示
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('taskAlerts');
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type}">
+                    ${message.replace(/\n/g, '<br>')}
+                </div>
+            `;
+            
+            setTimeout(() => {
+                alertContainer.innerHTML = '';
+            }, 5000);
+        }
+        
+        // ドラッグ&ドロップイベント
+        function handleDragStart(e, taskId) {
+            draggedTaskId = taskId;
+            e.target.closest('.task-item').classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            const taskItem = e.target.closest('.task-item');
+            if (taskItem && !taskItem.classList.contains('dragging')) {
+                taskItem.classList.add('drag-over');
+            }
+        }
+        
+        function handleDragLeave(e) {
+            const taskItem = e.target.closest('.task-item');
+            if (taskItem) {
+                taskItem.classList.remove('drag-over');
+            }
+        }
+        
+        function handleDrop(e, targetTaskId) {
+            e.preventDefault();
+            
+            if (draggedTaskId === targetTaskId) return;
+            
+            const draggedIndex = tasks.findIndex(task => task.id === draggedTaskId);
+            const targetIndex = tasks.findIndex(task => task.id === targetTaskId);
+            
+            const draggedTask = tasks.splice(draggedIndex, 1)[0];
+            tasks.splice(targetIndex, 0, draggedTask);
+            
+            renderTasks();
+        }
+        
+        function handleDragEnd(e) {
+            e.target.closest('.task-item').classList.remove('dragging');
+            document.querySelectorAll('.task-item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+            draggedTaskId = null;
+        }
+        
+        // タスク一覧の描画
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+            
+            if (tasks.length === 0) {
+                taskList.innerHTML = '<div style="color: #6c757d; text-align: center; padding: 20px;">タスクがありません</div>';
+                return;
+            }
+            
+            tasks.forEach(task => {
+                const endTime = minutesToTime(timeToMinutes(task.startTime) + task.duration);
+                const durationHours = (task.duration / 60).toFixed(1) + 'H';
+                
+                const taskStart = timeToMinutes(task.startTime);
+                const hasLunchOverlap = isLunchTime(taskStart, task.duration);
+                
+                let timeDisplayClass = 'time-display';
+                if (hasLunchOverlap) {
+                    timeDisplayClass += ' lunch-warning';
+                }
+                
+                const taskHtml = `
+                    <div class="task-item ${hasLunchOverlap ? 'lunch-overlap' : ''}" data-task-id="${task.id}"
+                         draggable="true"
+                         ondragstart="handleDragStart(event, ${task.id})"
+                         ondragover="handleDragOver(event)"
+                         ondragleave="handleDragLeave(event)"
+                         ondrop="handleDrop(event, ${task.id})"
+                         ondragend="handleDragEnd(event)">
+                        <div class="drag-handle">≡</div>
+                        <input type="text" class="task-name-input" value="${task.name}" 
+                               onchange="editTaskName(${task.id}, this.value)">
+                        <div class="task-time-controls">
+                            <button class="compact-time-btn" onclick="adjustTaskTime(${task.id}, 'start', -15)">◀</button>
+                            <div class="${timeDisplayClass}">${task.startTime}～${endTime}${hasLunchOverlap ? ' ⚠️' : ''}</div>
+                            <button class="compact-time-btn" onclick="adjustTaskTime(${task.id}, 'start', 15)">▶</button>
+                            
+                            <button class="compact-time-btn" onclick="adjustTaskTime(${task.id}, 'duration', -15)">◀</button>
+                            <div class="duration-display">${durationHours}</div>
+                            <button class="compact-time-btn" onclick="adjustTaskTime(${task.id}, 'duration', 15)">▶</button>
+                            
+                            <button class="btn btn-info btn-sm" onclick="duplicateTask(${task.id})" title="複製">複製</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteTask(${task.id})">削除</button>
+                        </div>
+                    </div>
+                `;
+                
+                taskList.insertAdjacentHTML('beforeend', taskHtml);
+            });
+        }
+        
+        // 出力生成
+        function generateOutput() {
+            const name = document.getElementById('employeeName').value;
+            const workType = document.getElementById('workType').value === 'その他' ? 
+                document.getElementById('customWorkType').value : document.getElementById('workType').value;
+            const date = document.getElementById('workDate').value;
+            const dayOfWeek = document.getElementById('dayOfWeek').value;
+            
+            if (!date) {
+                alert('日付を入力してください。');
+                return;
+            }
+            
+            const dateObj = new Date(date);
+            const month = dateObj.getMonth() + 1;
+            const day = dateObj.getDate();
+            
+            let output = `タイトル（ノート名）\n${name}　${workType}　${month}/${day}${dayOfWeek}\n\n`;
+            
+            const startTime = document.getElementById('startTime').value;
+            const lunchStart = document.getElementById('lunchStart').value;
+            const lunchEnd = document.getElementById('lunchEnd').value;
+            const endTime = document.getElementById('endTime').value;
+            const totalHours = document.getElementById('totalHours').textContent;
+            
+            const morningHours = ((timeToMinutes(lunchStart) - timeToMinutes(startTime)) / 60).toFixed(1);
+            const afternoonHours = ((timeToMinutes(endTime) - timeToMinutes(lunchEnd)) / 60).toFixed(1);
+            
+            output += `入力内容\n`;
+            output += `就業時間（予定）　　　　　　（実績）\n`;
+            output += `${startTime}〜 ${lunchStart}（${morningHours}H)　 　${startTime}～${lunchStart}（${morningHours}H）\n`;
+            output += `${lunchEnd}〜${endTime} （${afternoonHours}H)　  ${lunchEnd}〜：0（.H）　　　　　　　\n`;
+            output += `計 ${totalHours}　　　　　　　計　.H\n`;
+            output += `\n`;
+            output += `タスク\n`;
+            
+            const sortedTasks = [...tasks].sort((a, b) => 
+                timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
+            );
+            
+            sortedTasks.forEach(task => {
+                const endTime = minutesToTime(timeToMinutes(task.startTime) + task.duration);
+                output += `${task.name}　   ${task.startTime}〜${endTime}\n`;
+            });
+            
+            document.getElementById('outputText').value = output;
+        }
+        
+        // クリップボードにコピー
+        function copyToClipboard() {
+            const outputText = document.getElementById('outputText');
+            if (outputText.value.trim() === '') {
+                alert('出力テキストが生成されていません。まず「出力生成」ボタンを押してください。');
+                return;
+            }
+            
+            outputText.select();
+            document.execCommand('copy');
+            alert('クリップボードにコピーしました！');
+        }
+    </script>
+</body>
+</html>
