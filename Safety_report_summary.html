@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工事現場安全報告集計システム（改良版）</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            background: #ecf0f1;
+            padding: 20px;
+            border-bottom: 2px solid #bdc3c7;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            font-weight: bold;
+            min-width: 80px;
+        }
+
+        .control-group input, .control-group select {
+            padding: 8px 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .file-input-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-label {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+
+        .file-input-label:hover {
+            background: #2980b9;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+        }
+
+        .site-filter-container {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .site-filter-container h4 {
+            margin-bottom: 10px;
+            color: #856404;
+        }
+
+        .site-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .site-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .site-checkbox input[type="checkbox"] {
+            transform: scale(1.2);
+        }
+
+        .current-filter {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            background: #fff;
+            border-bottom: 2px solid #e0e0e0;
+            overflow-x: auto;
+        }
+
+        .tab-button {
+            padding: 15px 20px;
+            border: none;
+            background: #f8f8f8;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            white-space: nowrap;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button.active {
+            background: #3498db;
+            color: white;
+            border-bottom-color: #2980b9;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stats-card h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .stats-card .number {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .ranking-list {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .ranking-item:last-child {
+            border-bottom: none;
+        }
+
+        .ranking-number {
+            background: #3498db;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+
+        .ranking-number.gold {
+            background: #f1c40f;
+        }
+
+        .ranking-number.silver {
+            background: #95a5a6;
+        }
+
+        .ranking-number.bronze {
+            background: #e67e22;
+        }
+
+        .ranking-info {
+            flex: 1;
+        }
+
+        .ranking-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .ranking-count {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .data-summary {
+            background: #e8f6f3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .success-message {
+            background: #27ae60;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .time-chart {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .filter-info {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .control-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .control-group label {
+                min-width: auto;
+            }
+
+            .tab-buttons {
+                flex-wrap: wrap;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .site-checkboxes {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📊 工事現場安全報告集計システム（改良版）</h1>
+            <p>ヒヤリハット・安全報告データの分析と可視化（現場別フィルタ対応）</p>
+        </header>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>📁 JSONファイル:</label>
+                <div class="file-input-container">
+                    <input type="file" id="fileInput" class="file-input" multiple accept=".json" onchange="loadFiles()">
+                    <label for="fileInput" class="file-input-label">ファイルを選択</label>
+                </div>
+                <span id="fileCount">0個のファイルを選択</span>
+            </div>
+
+            <!-- 現場フィルタエリア -->
+            <div class="site-filter-container" id="siteFilterContainer" style="display: none;">
+                <h4>🏗️ 対象現場の選択</h4>
+                <div class="site-checkboxes" id="siteCheckboxes"></div>
+                <div class="control-group" style="margin-top: 15px;">
+                    <button class="btn btn-info" onclick="selectAllSites()">すべて選択</button>
+                    <button class="btn btn-info" onclick="clearAllSites()">すべて解除</button>
+                </div>
+                <div class="current-filter" id="currentFilter"></div>
+            </div>
+            
+            <div class="control-group">
+                <label>📅 期間:</label>
+                <input type="date" id="startDate">
+                <span>〜</span>
+                <input type="date" id="endDate">
+                <button class="btn btn-primary" onclick="filterData()">🔍 集計実行</button>
+                <button class="btn btn-success" onclick="exportToPDF()">📄 PDF出力</button>
+            </div>
+        </div>
+
+        <div id="dataSummary" class="data-summary" style="display: none;">
+            <strong>📈 データ概要:</strong>
+            <span id="summaryText"></span>
+        </div>
+
+        <div class="filter-info" id="filterInfo" style="display: none;"></div>
+
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="switchTab('overview')">📊 概要</button>
+            <button class="tab-button" onclick="switchTab('daily')">📈 日別集計</button>
+            <button class="tab-button" onclick="switchTab('hourly')">🕐 時間帯別</button>
+            <button class="tab-button" onclick="switchTab('hiyari-ranking')">🏆 ヒヤリハット種類</button>
+            <button class="tab-button" onclick="switchTab('contractor-ranking')">🏅 業者別ランキング</button>
+            <button class="tab-button" onclick="switchTab('site-comparison')">🏗️ 現場比較</button>
+        </div>
+
+        <!-- 概要タブ -->
+        <div id="overview-tab" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stats-card">
+                    <h3>総報告件数</h3>
+                    <div class="number" id="totalReports">0</div>
+                </div>
+                <div class="stats-card">
+                    <h3>ヒヤリハット</h3>
+                    <div class="number" id="hiyariCount">0</div>
+                </div>
+                <div class="stats-card">
+                    <h3>不安全箇所</h3>
+                    <div class="number" id="unsafeCount">0</div>
+                </div>
+                <div class="stats-card">
+                    <h3>安全改善提案</h3>
+                    <div class="number" id="improvementCount">0</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">📊 報告種類別集計</div>
+                <canvas id="overviewChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 日別集計タブ -->
+        <div id="daily-tab" class="tab-content">
+            <div class="control-group">
+                <label>表示形式:</label>
+                <select id="dailyChartType" onchange="updateDailyChart()">
+                    <option value="separate">個別グラフ</option>
+                    <option value="stacked">積み上げグラフ</option>
+                </select>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">📈 日別集計グラフ</div>
+                <canvas id="dailyChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 時間帯別タブ -->
+        <div id="hourly-tab" class="tab-content">
+            <div class="chart-container">
+                <div class="chart-title">🕐 時間帯別発生件数</div>
+                <div class="time-chart">
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ヒヤリハット種類ランキングタブ -->
+        <div id="hiyari-ranking-tab" class="tab-content">
+            <div class="chart-container">
+                <div class="chart-title">🏆 ヒヤリハット種類別ランキング</div>
+                <div id="hiyariRankingList" class="ranking-list"></div>
+            </div>
+        </div>
+
+        <!-- 業者別ランキングタブ -->
+        <div id="contractor-ranking-tab" class="tab-content">
+            <div class="chart-container">
+                <div class="chart-title">🏅 現場・職種別安全報告ランキング</div>
+                <div id="contractorRankingList" class="ranking-list"></div>
+            </div>
+        </div>
+
+        <!-- 新規：現場比較タブ -->
+        <div id="site-comparison-tab" class="tab-content">
+            <div class="chart-container">
+                <div class="chart-title">🏗️ 現場別比較分析</div>
+                <canvas id="siteComparisonChart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">📊 現場別報告種類内訳</div>
+                <canvas id="siteBreakdownChart"></canvas>
+            </div>
+        </div>
+
+        <div id="messageArea"></div>
+    </div>
+
+    <script>
+        let allData = [];
+        let filteredData = [];
+        let charts = {};
+        let availableSites = [];
+        let selectedSites = [];
+
+        // ファイル読み込み
+        function loadFiles() {
+            const files = document.getElementById('fileInput').files;
+            document.getElementById('fileCount').textContent = `${files.length}個のファイルを選択`;
+            
+            if (files.length === 0) return;
+
+            allData = [];
+            let loadedFiles = 0;
+
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        data.reportDate = new Date(data.報告日時);
+                        allData.push(data);
+                        loadedFiles++;
+
+                        if (loadedFiles === files.length) {
+                            allData.sort((a, b) => a.reportDate - b.reportDate);
+                            setupSiteFilter();
+                            setDefaultDateRange();
+                            filterData();
+                            showMessage('データを正常に読み込みました', 'success');
+                        }
+                    } catch (error) {
+                        console.error('JSON解析エラー:', error);
+                        showMessage(`ファイル読み込みエラー: ${file.name}`, 'error');
+                    }
+                };
+                reader.readAsText(file, 'UTF-8');
+            });
+        }
+
+        // 現場フィルタ設定
+        function setupSiteFilter() {
+            availableSites = [...new Set(allData.map(d => d.現場名))].sort();
+            selectedSites = [...availableSites]; // 初期状態では全現場を選択
+
+            const container = document.getElementById('siteCheckboxes');
+            container.innerHTML = '';
+
+            availableSites.forEach(site => {
+                const checkbox = document.createElement('div');
+                checkbox.className = 'site-checkbox';
+                checkbox.innerHTML = `
+                    <input type="checkbox" id="site_${site}" value="${site}" checked onchange="updateSiteSelection()">
+                    <label for="site_${site}">${site}</label>
+                `;
+                container.appendChild(checkbox);
+            });
+
+            document.getElementById('siteFilterContainer').style.display = 'block';
+            updateCurrentFilter();
+        }
+
+        // 現場選択更新
+        function updateSiteSelection() {
+            selectedSites = [];
+            availableSites.forEach(site => {
+                const checkbox = document.getElementById(`site_${site}`);
+                if (checkbox.checked) {
+                    selectedSites.push(site);
+                }
+            });
+            updateCurrentFilter();
+        }
+
+        // すべての現場を選択
+        function selectAllSites() {
+            availableSites.forEach(site => {
+                document.getElementById(`site_${site}`).checked = true;
+            });
+            selectedSites = [...availableSites];
+            updateCurrentFilter();
+        }
+
+        // すべての現場選択を解除
+        function clearAllSites() {
+            availableSites.forEach(site => {
+                document.getElementById(`site_${site}`).checked = false;
+            });
+            selectedSites = [];
+            updateCurrentFilter();
+        }
+
+        // 現在のフィルタ表示更新
+        function updateCurrentFilter() {
+            const filterDiv = document.getElementById('currentFilter');
+            if (selectedSites.length === 0) {
+                filterDiv.innerHTML = '⚠️ 現場が選択されていません';
+            } else if (selectedSites.length === availableSites.length) {
+                filterDiv.innerHTML = `✅ 全現場を対象 (${selectedSites.length}現場)`;
+            } else {
+                filterDiv.innerHTML = `🎯 選択中: ${selectedSites.join(', ')} (${selectedSites.length}/${availableSites.length}現場)`;
+            }
+        }
+
+        // デフォルト日付範囲設定
+        function setDefaultDateRange() {
+            if (allData.length === 0) return;
+
+            const dates = allData.map(d => d.reportDate);
+            const minDate = new Date(Math.min(...dates));
+            const maxDate = new Date(Math.max(...dates));
+
+            document.getElementById('startDate').value = minDate.toISOString().split('T')[0];
+            document.getElementById('endDate').value = maxDate.toISOString().split('T')[0];
+        }
+
+        // データフィルタリング
+        function filterData() {
+            if (selectedSites.length === 0) {
+                showMessage('現場が選択されていません', 'error');
+                return;
+            }
+
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(document.getElementById('endDate').value);
+            endDate.setHours(23, 59, 59, 999);
+
+            filteredData = allData.filter(d => 
+                d.reportDate >= startDate && 
+                d.reportDate <= endDate &&
+                selectedSites.includes(d.現場名)
+            );
+
+            if (filteredData.length === 0) {
+                showMessage('指定条件でデータが見つかりません', 'error');
+                return;
+            }
+
+            updateFilterInfo();
+            updateSummary();
+            updateOverviewTab();
+            updateDailyChart();
+            updateHourlyChart();
+            updateHiyariRanking();
+            updateContractorRanking();
+            updateSiteComparison();
+
+            document.getElementById('dataSummary').style.display = 'block';
+            document.getElementById('filterInfo').style.display = 'block';
+        }
+
+        // フィルタ情報表示更新
+        function updateFilterInfo() {
+            const filterInfo = document.getElementById('filterInfo');
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            filterInfo.innerHTML = `
+                📅 期間: ${startDate} ～ ${endDate} | 
+                🏗️ 対象現場: ${selectedSites.length}/${availableSites.length}現場 | 
+                📊 データ件数: ${filteredData.length}件
+            `;
+        }
+
+        // サマリー更新
+        function updateSummary() {
+            const total = filteredData.length;
+            const hiyari = filteredData.filter(d => d.報告種類 === 'ヒヤリハット').length;
+            const unsafe = filteredData.filter(d => d.報告種類 === '不安全箇所発見').length;
+            const improvement = filteredData.filter(d => d.報告種類 === '安全改善提案').length;
+
+            document.getElementById('summaryText').textContent = 
+                `総件数: ${total}件 (ヒヤリハット: ${hiyari}件, 不安全箇所: ${unsafe}件, 改善提案: ${improvement}件)`;
+
+            document.getElementById('totalReports').textContent = total;
+            document.getElementById('hiyariCount').textContent = hiyari;
+            document.getElementById('unsafeCount').textContent = unsafe;
+            document.getElementById('improvementCount').textContent = improvement;
+        }
+
+        // 概要タブ更新
+        function updateOverviewTab() {
+            const ctx = document.getElementById('overviewChart').getContext('2d');
+            
+            if (charts.overview) {
+                charts.overview.destroy();
+            }
+
+            const reportTypes = {};
+            filteredData.forEach(d => {
+                reportTypes[d.報告種類] = (reportTypes[d.報告種類] || 0) + 1;
+            });
+
+            charts.overview = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(reportTypes),
+                    datasets: [{
+                        data: Object.values(reportTypes),
+                        backgroundColor: ['#e74c3c', '#f39c12', '#27ae60'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // 日別グラフ更新
+        function updateDailyChart() {
+            const ctx = document.getElementById('dailyChart').getContext('2d');
+            const chartType = document.getElementById('dailyChartType').value;
+            
+            if (charts.daily) {
+                charts.daily.destroy();
+            }
+
+            // 日付別データ集計
+            const dailyData = {};
+            filteredData.forEach(d => {
+                const dateStr = d.reportDate.toISOString().split('T')[0];
+                if (!dailyData[dateStr]) {
+                    dailyData[dateStr] = {
+                        'ヒヤリハット': 0,
+                        '不安全箇所発見': 0,
+                        '安全改善提案': 0
+                    };
+                }
+                dailyData[dateStr][d.報告種類]++;
+            });
+
+            const sortedDates = Object.keys(dailyData).sort();
+            const datasets = [];
+
+            if (chartType === 'separate') {
+                datasets.push({
+                    label: 'ヒヤリハット',
+                    data: sortedDates.map(date => dailyData[date]['ヒヤリハット']),
+                    backgroundColor: '#e74c3c',
+                    borderColor: '#c0392b',
+                    borderWidth: 1
+                });
+                datasets.push({
+                    label: '不安全箇所発見',
+                    data: sortedDates.map(date => dailyData[date]['不安全箇所発見']),
+                    backgroundColor: '#f39c12',
+                    borderColor: '#d68910',
+                    borderWidth: 1
+                });
+                datasets.push({
+                    label: '安全改善提案',
+                    data: sortedDates.map(date => dailyData[date]['安全改善提案']),
+                    backgroundColor: '#27ae60',
+                    borderColor: '#229954',
+                    borderWidth: 1
+                });
+            } else {
+                datasets.push({
+                    label: 'ヒヤリハット',
+                    data: sortedDates.map(date => dailyData[date]['ヒヤリハット']),
+                    backgroundColor: '#e74c3c'
+                });
+                datasets.push({
+                    label: '不安全箇所発見',
+                    data: sortedDates.map(date => dailyData[date]['不安全箇所発見']),
+                    backgroundColor: '#f39c12'
+                });
+                datasets.push({
+                    label: '安全改善提案',
+                    data: sortedDates.map(date => dailyData[date]['安全改善提案']),
+                    backgroundColor: '#27ae60'
+                });
+            }
+
+            charts.daily = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedDates,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            stacked: chartType === 'stacked'
+                        },
+                        y: {
+                            stacked: chartType === 'stacked',
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        // 時間帯別グラフ更新
+        function updateHourlyChart() {
+            const ctx = document.getElementById('hourlyChart').getContext('2d');
+            
+            if (charts.hourly) {
+                charts.hourly.destroy();
+            }
+
+            const hourlyData = new Array(24).fill(0);
+            filteredData.forEach(d => {
+                const hour = d.reportDate.getHours();
+                hourlyData[hour]++;
+            });
+
+            const hourLabels = Array.from({length: 24}, (_, i) => `${i}:00-${i+1}:00`);
+
+            charts.hourly = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: hourLabels,
+                    datasets: [{
+                        label: '報告件数',
+                        data: hourlyData,
+                        backgroundColor: '#3498db',
+                        borderColor: '#2980b9',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // ヒヤリハット種類ランキング更新
+        function updateHiyariRanking() {
+            const hiyariData = filteredData.filter(d => d.報告種類 === 'ヒヤリハット');
+            const hiyariTypes = {};
+            
+            hiyariData.forEach(d => {
+                const type = d.ヒヤリハット種類 || '未分類';
+                hiyariTypes[type] = (hiyariTypes[type] || 0) + 1;
+            });
+
+            const sortedTypes = Object.entries(hiyariTypes)
+                .sort((a, b) => b[1] - a[1]);
+
+            const listHtml = sortedTypes.map((item, index) => {
+                let rankClass = '';
+                if (index === 0) rankClass = 'gold';
+                else if (index === 1) rankClass = 'silver';
+                else if (index === 2) rankClass = 'bronze';
+
+                return `
+                    <div class="ranking-item">
+                        <div class="ranking-number ${rankClass}">${index + 1}</div>
+                        <div class="ranking-info">
+                            <div class="ranking-name">${item[0]}</div>
+                        </div>
+                        <div class="ranking-count">${item[1]}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('hiyariRankingList').innerHTML = listHtml;
+        }
+
+        // 業者別ランキング更新
+        function updateContractorRanking() {
+            const contractorData = {};
+            
+            filteredData.forEach(d => {
+                const key = `${d.現場名} - ${d.職種} (${d.氏名})`;
+                contractorData[key] = (contractorData[key] || 0) + 1;
+            });
+
+            const sortedContractors = Object.entries(contractorData)
+                .sort((a, b) => b[1] - a[1]);
+
+            const listHtml = sortedContractors.map((item, index) => {
+                let rankClass = '';
+                if (index === 0) rankClass = 'gold';
+                else if (index === 1) rankClass = 'silver';
+                else if (index === 2) rankClass = 'bronze';
+
+                return `
+                    <div class="ranking-item">
+                        <div class="ranking-number ${rankClass}">${index + 1}</div>
+                        <div class="ranking-info">
+                            <div class="ranking-name">${item[0]}</div>
+                        </div>
+                        <div class="ranking-count">${item[1]}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('contractorRankingList').innerHTML = listHtml;
+        }
+
+        // 現場比較更新
+        function updateSiteComparison() {
+            // 現場別総件数比較
+            const ctx1 = document.getElementById('siteComparisonChart').getContext('2d');
+            
+            if (charts.siteComparison) {
+                charts.siteComparison.destroy();
+            }
+
+            const siteData = {};
+            filteredData.forEach(d => {
+                siteData[d.現場名] = (siteData[d.現場名] || 0) + 1;
+            });
+
+            const sortedSites = Object.entries(siteData).sort((a, b) => b[1] - a[1]);
+
+            charts.siteComparison = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: sortedSites.map(item => item[0]),
+                    datasets: [{
+                        label: '報告件数',
+                        data: sortedSites.map(item => item[1]),
+                        backgroundColor: ['#e74c3c', '#f39c12', '#27ae60', '#3498db', '#9b59b6'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // 現場別報告種類内訳
+            const ctx2 = document.getElementById('siteBreakdownChart').getContext('2d');
+            
+            if (charts.siteBreakdown) {
+                charts.siteBreakdown.destroy();
+            }
+
+            const siteBreakdownData = {};
+            selectedSites.forEach(site => {
+                siteBreakdownData[site] = {
+                    'ヒヤリハット': 0,
+                    '不安全箇所発見': 0,
+                    '安全改善提案': 0
+                };
+            });
+
+            filteredData.forEach(d => {
+                siteBreakdownData[d.現場名][d.報告種類]++;
+            });
+
+            const datasets = [
+                {
+                    label: 'ヒヤリハット',
+                    data: selectedSites.map(site => siteBreakdownData[site]['ヒヤリハット']),
+                    backgroundColor: '#e74c3c'
+                },
+                {
+                    label: '不安全箇所発見',
+                    data: selectedSites.map(site => siteBreakdownData[site]['不安全箇所発見']),
+                    backgroundColor: '#f39c12'
+                },
+                {
+                    label: '安全改善提案',
+                    data: selectedSites.map(site => siteBreakdownData[site]['安全改善提案']),
+                    backgroundColor: '#27ae60'
+                }
+            ];
+
+            charts.siteBreakdown = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: selectedSites,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            stacked: true
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        // タブ切り替え
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        // PDF出力
+        function exportToPDF() {
+            if (filteredData.length === 0) {
+                showMessage('出力するデータがありません', 'error');
+                return;
+            }
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                
+                // タイトル
+                pdf.setFontSize(16);
+                pdf.text('Safety Report Analysis', 20, 20);
+                
+                // 期間・現場情報
+                pdf.setFontSize(12);
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                pdf.text(`Period: ${startDate} - ${endDate}`, 20, 35);
+                pdf.text(`Sites: ${selectedSites.join(', ')}`, 20, 45);
+                pdf.text(`Total Reports: ${filteredData.length}`, 20, 55);
+                
+                // 報告種類別集計
+                const reportTypes = {};
+                filteredData.forEach(d => {
+                    reportTypes[d.報告種類] = (reportTypes[d.報告種類] || 0) + 1;
+                });
+                
+                let yPos = 70;
+                pdf.text('Report Type Summary:', 20, yPos);
+                yPos += 10;
+                
+                Object.entries(reportTypes).forEach(([type, count]) => {
+                    pdf.text(`- ${type}: ${count}`, 25, yPos);
+                    yPos += 8;
+                });
+
+                // 現場別集計
+                yPos += 10;
+                pdf.text('Site Summary:', 20, yPos);
+                yPos += 10;
+                
+                const siteData = {};
+                filteredData.forEach(d => {
+                    siteData[d.現場名] = (siteData[d.現場名] || 0) + 1;
+                });
+                
+                Object.entries(siteData).forEach(([site, count]) => {
+                    pdf.text(`- ${site}: ${count}`, 25, yPos);
+                    yPos += 8;
+                });
+
+                const filename = `safety_report_${startDate}_${endDate}_${selectedSites.length}sites.pdf`;
+                pdf.save(filename);
+                showMessage('PDFファイルが生成されました', 'success');
+                
+            } catch (error) {
+                console.error('PDF生成エラー:', error);
+                showMessage('PDF生成に失敗しました', 'error');
+            }
+        }
+
+        // メッセージ表示
+        function showMessage(message, type) {
+            const messageArea = document.getElementById('messageArea');
+            const className = type === 'success' ? 'success-message' : 'error-message';
+            messageArea.innerHTML = `<div class="${className}">${message}</div>`;
+            
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+            
+            document.getElementById('startDate').value = lastWeek.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+        });
+    </script>
+</body>
+</html>
