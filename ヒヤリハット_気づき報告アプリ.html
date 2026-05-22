@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工事現場安全報告アプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .header .date {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .tab-buttons {
+            display: flex;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            background: #f8f8f8;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .tab-button.active {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            min-height: calc(100vh - 200px);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group select, .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .hiyari-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .hiyari-button {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .hiyari-button:hover {
+            border-color: #4a90e2;
+            background: #f0f8ff;
+        }
+
+        .hiyari-button.selected {
+            border-color: #4a90e2;
+            background: #4a90e2;
+            color: white;
+        }
+
+        .hiyari-button .icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .submit-button {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .save-button {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .status-message {
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .current-settings {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .current-settings h3 {
+            margin-bottom: 10px;
+            color: #1976d2;
+        }
+
+        .other-input {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .other-input.show {
+            display: block;
+        }
+
+        .box-upload-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🚧 工事現場安全報告システム</h1>
+            <div class="date" id="currentDate"></div>
+        </header>
+
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="switchTab('report')">📋 報告</button>
+            <button class="tab-button" onclick="switchTab('settings')">⚙️ 設定</button>
+        </div>
+
+        <!-- 報告タブ -->
+        <div id="report-tab" class="tab-content active">
+            <form id="reportForm">
+                <div class="form-group">
+                    <label for="reportType">報告種類</label>
+                    <select id="reportType" required>
+                        <option value="">選択してください</option>
+                        <option value="ヒヤリハット">ヒヤリハット</option>
+                        <option value="不安全箇所">不安全箇所発見</option>
+                        <option value="安全提案">安全改善提案</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>ヒヤリハットの種類（該当するものをタップ）</label>
+                    <div class="hiyari-buttons">
+                        <div class="hiyari-button" data-value="転倒">
+                            <span class="icon">🤸</span>
+                            転倒
+                        </div>
+                        <div class="hiyari-button" data-value="激突">
+                            <span class="icon">💥</span>
+                            激突
+                        </div>
+                        <div class="hiyari-button" data-value="飛来落下">
+                            <span class="icon">⬇️</span>
+                            飛来落下
+                        </div>
+                        <div class="hiyari-button" data-value="激突され">
+                            <span class="icon">🚗</span>
+                            激突され
+                        </div>
+                        <div class="hiyari-button" data-value="切れ・こすれ">
+                            <span class="icon">✂️</span>
+                            切れ・こすれ
+                        </div>
+                        <div class="hiyari-button" data-value="はさまれ・巻き込まれ">
+                            <span class="icon">⚙️</span>
+                            はさまれ・巻込まれ
+                        </div>
+                        <div class="hiyari-button" data-value="墜落・転落">
+                            <span class="icon">🪜</span>
+                            墜落・転落
+                        </div>
+                        <div class="hiyari-button" data-value="動作の反動・無理な動作">
+                            <span class="icon">🤾</span>
+                            動作の反動・無理動作
+                        </div>
+                        <div class="hiyari-button" data-value="崩壊・倒壊">
+                            <span class="icon">🏗️</span>
+                            崩壊・倒壊
+                        </div>
+                        <div class="hiyari-button" data-value="踏み抜き">
+                            <span class="icon">👢</span>
+                            踏み抜き
+                        </div>
+                        <div class="hiyari-button" data-value="高温・低温物との接触">
+                            <span class="icon">🔥</span>
+                            高温・低温物接触
+                        </div>
+                        <div class="hiyari-button" data-value="その他" onclick="toggleOtherInput()">
+                            <span class="icon">❓</span>
+                            その他
+                        </div>
+                    </div>
+                    
+                    <div class="other-input" id="otherInput">
+                        <input type="text" id="otherDetail" placeholder="その他の詳細を入力してください">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="location">発生場所</label>
+                    <input type="text" id="location" placeholder="例：2階東側、クレーン作業エリア" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">状況詳細</label>
+                    <textarea id="description" placeholder="何が起こったか、どのような状況だったかを詳しく記入してください" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="improvement">改善提案・対策</label>
+                    <textarea id="improvement" placeholder="今後の改善案や対策があれば記入してください"></textarea>
+                </div>
+
+                <button type="submit" class="submit-button">📤 報告を送信</button>
+            </form>
+
+            <div class="box-upload-info">
+                <strong>📦 Box連携について</strong><br>
+                報告データはJSON形式で自動生成され、設定されたBoxファイルリクエストに送信されます。
+            </div>
+
+            <div id="reportStatus"></div>
+        </div>
+
+        <!-- 設定タブ -->
+        <div id="settings-tab" class="tab-content">
+            <div class="current-settings">
+                <h3>📋 現在の設定</h3>
+                <div id="currentSettings">
+                    <p><strong>現場名:</strong> <span id="displaySiteName">未設定</span></p>
+                    <p><strong>職種:</strong> <span id="displayJobType">未設定</span></p>
+                    <p><strong>氏名:</strong> <span id="displayUserName">未設定</span></p>
+                </div>
+            </div>
+
+            <form id="settingsForm">
+                <div class="form-group">
+                    <label for="siteName">現場名</label>
+                    <input type="text" id="siteName" placeholder="例：鳴瀬川トンネル工事" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="jobType">職種</label>
+                    <select id="jobType" required>
+                        <option value="">選択してください</option>
+                        <option value="現場監督">現場監督</option>
+                        <option value="作業員">作業員</option>
+                        <option value="重機オペレーター">重機オペレーター</option>
+                        <option value="鳶職">鳶職</option>
+                        <option value="型枠工">型枠工</option>
+                        <option value="鉄筋工">鉄筋工</option>
+                        <option value="左官">左官</option>
+                        <option value="電気工事士">電気工事士</option>
+                        <option value="配管工">配管工</option>
+                        <option value="溶接工">溶接工</option>
+                        <option value="土工">土工</option>
+                        <option value="その他">その他</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="userName">氏名</label>
+                    <input type="text" id="userName" placeholder="山田太郎" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="boxUploadUrl">BoxファイルリクエストURL（任意）</label>
+                    <input type="url" id="boxUploadUrl" placeholder="https://app.box.com/f/...">
+                    <small>BoxのファイルリクエストURLを設定すると、報告データが自動的にアップロードされます</small>
+                </div>
+
+                <button type="submit" class="save-button">💾 設定を保存</button>
+            </form>
+
+            <div id="settingsStatus"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedHiyariType = '';
+        let settings = {};
+
+        // 現在日時を表示
+        function updateDateTime() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('ja-JP', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'long'
+            });
+            const timeStr = now.toLocaleTimeString('ja-JP', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            document.getElementById('currentDate').textContent = `${dateStr} ${timeStr}`;
+        }
+
+        // タブ切り替え
+        function switchTab(tabName) {
+            // タブボタンのアクティブ状態を更新
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+            // タブコンテンツの表示/非表示
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+
+            if (tabName === 'settings') {
+                loadSettings();
+            }
+        }
+
+        // ヒヤリハット種類選択
+        document.querySelectorAll('.hiyari-button').forEach(button => {
+            button.addEventListener('click', function() {
+                if (this.getAttribute('data-value') !== 'その他') {
+                    document.querySelectorAll('.hiyari-button').forEach(btn => {
+                        btn.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    selectedHiyariType = this.getAttribute('data-value');
+                    
+                    // その他の入力フィールドを隠す
+                    document.getElementById('otherInput').classList.remove('show');
+                }
+            });
+        });
+
+        // その他の入力フィールド表示/非表示
+        function toggleOtherInput() {
+            const otherInput = document.getElementById('otherInput');
+            const otherButton = document.querySelector('[data-value="その他"]');
+            
+            document.querySelectorAll('.hiyari-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            otherButton.classList.add('selected');
+            otherInput.classList.add('show');
+            selectedHiyariType = 'その他';
+        }
+
+        // 設定の読み込み
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('safetyAppSettings');
+            if (savedSettings) {
+                settings = JSON.parse(savedSettings);
+                document.getElementById('siteName').value = settings.siteName || '';
+                document.getElementById('jobType').value = settings.jobType || '';
+                document.getElementById('userName').value = settings.userName || '';
+                document.getElementById('boxUploadUrl').value = settings.boxUploadUrl || '';
+                
+                // 現在の設定表示を更新
+                document.getElementById('displaySiteName').textContent = settings.siteName || '未設定';
+                document.getElementById('displayJobType').textContent = settings.jobType || '未設定';
+                document.getElementById('displayUserName').textContent = settings.userName || '未設定';
+            }
+        }
+
+        // 設定の保存
+        document.getElementById('settingsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            settings = {
+                siteName: document.getElementById('siteName').value,
+                jobType: document.getElementById('jobType').value,
+                userName: document.getElementById('userName').value,
+                boxUploadUrl: document.getElementById('boxUploadUrl').value
+            };
+            
+            localStorage.setItem('safetyAppSettings', JSON.stringify(settings));
+            
+            // 現在の設定表示を更新
+            document.getElementById('displaySiteName').textContent = settings.siteName;
+            document.getElementById('displayJobType').textContent = settings.jobType;
+            document.getElementById('displayUserName').textContent = settings.userName;
+            
+            showMessage('settingsStatus', '設定が保存されました', 'success');
+        });
+
+        // 報告の送信
+        document.getElementById('reportForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const savedSettings = localStorage.getItem('safetyAppSettings');
+            if (!savedSettings) {
+                showMessage('reportStatus', '先に設定タブで現場名や職種を設定してください', 'error');
+                return;
+            }
+            
+            settings = JSON.parse(savedSettings);
+            
+            // その他が選択された場合の処理
+            let finalHiyariType = selectedHiyariType;
+            if (selectedHiyariType === 'その他') {
+                const otherDetail = document.getElementById('otherDetail').value.trim();
+                if (otherDetail) {
+                    finalHiyariType = `その他: ${otherDetail}`;
+                }
+            }
+            
+            const reportData = {
+                報告日時: new Date().toISOString(),
+                現場名: settings.siteName,
+                職種: settings.jobType,
+                氏名: settings.userName,
+                報告種類: document.getElementById('reportType').value,
+                ヒヤリハット種類: finalHiyariType,
+                発生場所: document.getElementById('location').value,
+                状況詳細: document.getElementById('description').value,
+                改善提案: document.getElementById('improvement').value
+            };
+            
+            // ファイル名生成（日時_現場名_職種_氏名.json）
+            const now = new Date();
+            const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const fileName = `${timestamp}_${settings.siteName}_${settings.jobType}_${settings.userName}.json`;
+            
+            // JSONファイルとしてダウンロード
+            downloadAsJSON(reportData, fileName);
+            
+            // CSVファイルとしてもダウンロード
+            const csvFileName = fileName.replace('.json', '.csv');
+            downloadAsCSV(reportData, csvFileName);
+            
+            showMessage('reportStatus', `報告データが生成されました<br>ファイル名: ${fileName}`, 'success');
+            
+            // フォームリセット
+            document.getElementById('reportForm').reset();
+            selectedHiyariType = '';
+            document.querySelectorAll('.hiyari-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            document.getElementById('otherInput').classList.remove('show');
+        });
+
+        // JSONファイルダウンロード
+        function downloadAsJSON(data, filename) {
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // CSVファイルダウンロード
+        function downloadAsCSV(data, filename) {
+            const headers = Object.keys(data);
+            const values = Object.values(data).map(v => `"${v}"`);
+            const csvContent = headers.join(',') + '\n' + values.join(',');
+            
+            // BOM付きUTF-8でエンコード
+            const bom = '\uFEFF';
+            const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // メッセージ表示
+        function showMessage(elementId, message, type) {
+            const messageDiv = document.getElementById(elementId);
+            messageDiv.innerHTML = `<div class="status-message ${type}">${message}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDateTime();
+            setInterval(updateDateTime, 60000); // 1分ごとに時刻更新
+            loadSettings();
+        });
+    </script>
+</body>
+</html>
