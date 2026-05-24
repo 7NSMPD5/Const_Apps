@@ -41,51 +41,45 @@
             font-weight: normal;
         }
         
-        .main-content {
-            display: flex;
-            height: calc(100vh - 70px);
-        }
-        
-        .sidebar {
-            width: 180px;
-            background: #f8f9fa;
-            border-right: 1px solid #e9ecef;
-            padding: 15px 10px;
-            overflow-y: auto;
-        }
-        
-        .content-area {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        
+        /* タブナビゲーションを上部に変更 */
         .tab-nav {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            padding: 0;
+            margin: 0;
             list-style: none;
+            overflow-x: auto;
+            white-space: nowrap;
         }
         
         .tab-nav li {
-            margin-bottom: 6px;
+            flex: 1;
+            min-width: 0;
         }
         
         .tab-nav button {
             width: 100%;
-            padding: 8px 12px;
+            padding: 12px 8px;
             border: none;
             background: white;
-            text-align: left;
-            border-radius: 4px;
+            text-align: center;
             cursor: pointer;
             font-size: 13px;
             color: #6c757d;
             transition: all 0.2s;
-            border: 1px solid #e9ecef;
+            border-bottom: 3px solid transparent;
+            border-right: 1px solid #e9ecef;
+        }
+        
+        .tab-nav li:last-child button {
+            border-right: none;
         }
         
         .tab-nav button.active {
             background: #495057;
             color: white;
-            border-color: #495057;
+            border-bottom-color: #495057;
         }
         
         .tab-nav button:hover {
@@ -94,6 +88,17 @@
         
         .tab-nav button.active:hover {
             background: #343a40;
+        }
+        
+        /* メインコンテンツエリア */
+        .main-content {
+            display: block;
+        }
+        
+        .content-area {
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(100vh - 140px);
         }
         
         .section {
@@ -115,15 +120,16 @@
         
         .form-row {
             display: flex;
-            gap: 20px;
+            gap: 15px;
             margin-bottom: 15px;
-            align-items: center;
+            align-items: flex-end;
             flex-wrap: wrap;
         }
         
         .form-group {
             display: flex;
             flex-direction: column;
+            min-width: 120px;
         }
         
         .form-group label {
@@ -151,24 +157,37 @@
             display: none;
         }
         
+        /* 時間入力セクションをモバイル対応 */
         .compact-time-section {
-            display: flex;
-            align-items: center;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 15px;
-            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        @media (max-width: 768px) {
+            .compact-time-section {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
         }
         
         .time-group {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            justify-content: space-between;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
         }
         
         .time-group label {
             margin: 0;
             font-size: 12px;
-            min-width: 50px;
+            min-width: 60px;
             color: #6c757d;
+            flex-shrink: 0;
         }
         
         .compact-time-input-group {
@@ -187,8 +206,8 @@
         }
         
         .compact-time-btn {
-            width: 22px;
-            height: 22px;
+            width: 24px;
+            height: 24px;
             border: 1px solid #dee2e6;
             background: #f8f9fa;
             cursor: pointer;
@@ -205,12 +224,13 @@
         }
         
         .btn {
-            padding: 6px 12px;
+            padding: 8px 12px;
             border: none;
             border-radius: 3px;
             cursor: pointer;
             font-size: 13px;
             transition: all 0.2s;
+            white-space: nowrap;
         }
         
         .btn-primary {
@@ -276,23 +296,25 @@
             font-size: 16px;
             color: #28a745;
             text-align: center;
-            padding: 10px;
+            padding: 12px;
             background: #f8fff8;
             border-radius: 4px;
             margin: 10px 0;
             border: 1px solid #e8f5e8;
+            grid-column: 1 / -1;
         }
         
         .task-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             padding: 12px;
             border: 1px solid #e9ecef;
             border-radius: 4px;
             margin-bottom: 8px;
             background: white;
             transition: all 0.2s;
+            flex-wrap: wrap;
         }
         
         .task-item:hover {
@@ -337,6 +359,7 @@
         
         .task-name-input {
             flex: 1;
+            min-width: 150px;
             padding: 6px 10px;
             border: 1px solid #dee2e6;
             border-radius: 3px;
@@ -346,7 +369,8 @@
         .task-time-controls {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            flex-wrap: wrap;
         }
         
         .time-display {
@@ -412,14 +436,14 @@
         }
         
         .quick-task-buttons {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 8px;
-            flex-wrap: wrap;
             margin-bottom: 15px;
         }
         
         .quick-task-btn {
-            padding: 4px 8px;
+            padding: 6px 8px;
             background: #e9ecef;
             border: 1px solid #dee2e6;
             border-radius: 3px;
@@ -427,6 +451,7 @@
             font-size: 12px;
             color: #495057;
             transition: all 0.2s;
+            text-align: center;
         }
         
         .quick-task-btn:hover {
@@ -452,6 +477,47 @@
             background: #e3f2fd;
             border-radius: 4px;
             border: 1px solid #bbdefb;
+        }
+        
+        .box-sync-section {
+            padding: 20px;
+            background: #fff3e0;
+            border-radius: 4px;
+            border: 1px solid #ffcc80;
+            margin-bottom: 20px;
+        }
+        
+        .box-sync-title {
+            font-size: 14px;
+            font-weight: normal;
+            margin-bottom: 15px;
+            color: #ef6c00;
+            border-bottom: 1px solid #ffcc80;
+            padding-bottom: 8px;
+        }
+        
+        .box-instructions {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #17a2b8;
+            margin: 15px 0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        .box-instructions h4 {
+            color: #17a2b8;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .box-instructions ol {
+            margin-left: 15px;
+        }
+        
+        .box-instructions li {
+            margin-bottom: 5px;
         }
         
         .alert {
@@ -485,6 +551,78 @@
             font-weight: bold;
             margin-left: 10px;
         }
+        
+        /* モバイル対応の追加調整 */
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+            
+            .content-area {
+                padding: 10px;
+                max-height: calc(100vh - 120px);
+            }
+            
+            .section {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .form-row {
+                gap: 10px;
+            }
+            
+            .form-group {
+                min-width: 100px;
+            }
+            
+            .task-controls, .template-controls {
+                gap: 6px;
+            }
+            
+            .btn {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            
+            .task-item {
+                gap: 6px;
+                padding: 10px;
+            }
+            
+            .task-time-controls {
+                gap: 4px;
+            }
+            
+            .tab-nav button {
+                padding: 10px 4px;
+                font-size: 12px;
+            }
+            
+            .output-text {
+                height: 250px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .task-name-input {
+                min-width: 100%;
+                margin-bottom: 8px;
+            }
+            
+            .task-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .task-time-controls {
+                justify-content: center;
+            }
+            
+            .quick-task-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -493,16 +631,15 @@
             <h1>勤務予定入力システム</h1>
         </div>
         
+        <!-- タブナビゲーションを上部に移動 -->
+        <ul class="tab-nav">
+            <li><button class="active" data-tab="basic">基本情報</button></li>
+            <li><button data-tab="tasks">タスク予定</button></li>
+            <li><button data-tab="output">出力</button></li>
+            <li><button data-tab="template">テンプレート</button></li>
+        </ul>
+        
         <div class="main-content">
-            <div class="sidebar">
-                <ul class="tab-nav">
-                    <li><button class="active" data-tab="basic">基本情報</button></li>
-                    <li><button data-tab="tasks">タスク予定</button></li>
-                    <li><button data-tab="output">出力</button></li>
-                    <li><button data-tab="template">テンプレート</button></li>
-                </ul>
-            </div>
-            
             <div class="content-area">
                 <!-- 基本情報タブ -->
                 <div id="basic-tab" class="tab-content active">
@@ -510,24 +647,24 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label>名前</label>
-                                <input type="text" id="employeeName" value="山本" style="width: 150px;">
+                                <input type="text" id="employeeName" value="山本" style="width: 120px;">
                             </div>
                             <div class="form-group">
                                 <label>勤務形態</label>
-                                <select id="workType" style="width: 150px;">
+                                <select id="workType" style="width: 120px;">
                                     <option value="本社勤務">本社勤務</option>
                                     <option value="在宅勤務">在宅勤務</option>
                                     <option value="その他">その他</option>
                                 </select>
-                                <input type="text" id="customWorkType" style="display:none; margin-top:5px; width: 150px;" placeholder="勤務形態を入力">
+                                <input type="text" id="customWorkType" style="display:none; margin-top:5px; width: 120px;" placeholder="勤務形態を入力">
                             </div>
                             <div class="form-group">
                                 <label>日付</label>
-                                <input type="date" id="workDate" style="width: 150px;">
+                                <input type="date" id="workDate" style="width: 130px;">
                             </div>
                             <div class="form-group">
                                 <label>曜日</label>
-                                <input type="text" id="dayOfWeek" readonly style="background:#f8f9fa; width: 80px;">
+                                <input type="text" id="dayOfWeek" readonly style="background:#f8f9fa; width: 70px;">
                             </div>
                         </div>
                         
@@ -596,7 +733,7 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label>タスク名</label>
-                                <input type="text" id="newTaskName" placeholder="タスク名を入力" style="width: 300px;">
+                                <input type="text" id="newTaskName" placeholder="タスク名を入力" style="width: 200px;">
                             </div>
                             <div class="form-group">
                                 <label>所要時間（分）</label>
@@ -637,12 +774,48 @@
                 
                 <!-- テンプレート管理タブ -->
                 <div id="template-tab" class="tab-content">
+                    <!-- Box連携セクション -->
+                    <div class="box-sync-section">
+                        <div class="box-sync-title">📦 Box連携（手動同期）</div>
+                        
+                        <div class="form-row">
+                            <button class="btn btn-primary" onclick="exportForBox()">Boxアップロード用ファイル作成</button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('boxFileInput').click()">Boxからファイル読み込み</button>
+                            <input type="file" id="boxFileInput" class="file-input" accept=".json,.csv" onchange="importFromBox(event)">
+                        </div>
+                        
+                        <div class="box-instructions">
+                            <h4>📤 Boxへのアップロード手順</h4>
+                            <ol>
+                                <li>「Boxアップロード用ファイル作成」ボタンをクリック</li>
+                                <li>ダウンロードされたファイルをBoxの指定フォルダにアップロード</li>
+                                <li>ファイル名は自動で日付が付きます（例: schedule_templates_2026-05-19.json）</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="box-instructions">
+                            <h4>📥 Boxからのダウンロード手順</h4>
+                            <ol>
+                                <li>BoxからJSONまたはCSVファイルをローカルにダウンロード</li>
+                                <li>「Boxからファイル読み込み」ボタンをクリック</li>
+                                <li>ダウンロードしたファイルを選択</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <strong>推奨運用：</strong><br>
+                            • テンプレート更新時は必ずBoxにアップロード<br>
+                            • 新しいPC使用時は最初にBoxから読み込み<br>
+                            • ファイル名に日付を含めてバージョン管理
+                        </div>
+                    </div>
+                    
                     <div class="section">
-                        <div class="section-title">標準スケジュール管理</div>
+                        <div class="section-title">ローカルバックアップ・復元</div>
                         
                         <div class="form-row" style="margin-bottom: 20px;">
-                            <button class="btn btn-primary" onclick="exportAllTemplates()">全曜日テンプレートをJSONエクスポート</button>
-                            <button class="btn btn-primary" onclick="exportAllTemplatesCSV()">全曜日テンプレートをCSVエクスポート</button>
+                            <button class="btn btn-primary" onclick="exportAllTemplates()">JSONエクスポート</button>
+                            <button class="btn btn-primary" onclick="exportAllTemplatesCSV()">CSVエクスポート</button>
                             <button class="btn btn-secondary" onclick="document.getElementById('jsonFileInput').click()">JSONファイル読み込み</button>
                             <button class="btn btn-secondary" onclick="document.getElementById('csvFileInput').click()">CSVファイル読み込み</button>
                             <input type="file" id="jsonFileInput" class="file-input" accept=".json" onchange="importJSONTemplates(event)">
@@ -707,6 +880,123 @@
         // ローカルストレージにテンプレート保存
         function saveTemplates() {
             localStorage.setItem('dayTemplates', JSON.stringify(dayTemplates));
+        }
+        
+        // Boxアップロード用ファイル作成
+        function exportForBox() {
+            const data = {
+                exportDate: new Date().toISOString(),
+                version: '1.0',
+                source: 'work-schedule-system',
+                device: navigator.platform || 'Unknown',
+                templates: dayTemplates
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Box用のファイル名（日付・時刻付き）
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '');
+            a.download = `schedule_templates_${dateStr}_${timeStr}.json`;
+            
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showAlert(`Boxアップロード用ファイルを作成しました。\nファイル名: ${a.download}\n\n手動でBoxにアップロードしてください。`, 'success');
+        }
+        
+        // Boxからファイル読み込み
+        function importFromBox(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const fileName = file.name.toLowerCase();
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    let importedTemplates = {};
+                    
+                    if (fileName.endsWith('.json')) {
+                        const data = JSON.parse(e.target.result);
+                        
+                        if (data.templates) {
+                            importedTemplates = data.templates;
+                            
+                            // バージョン情報があれば表示
+                            let versionInfo = '';
+                            if (data.exportDate) {
+                                const exportDate = new Date(data.exportDate).toLocaleString('ja-JP');
+                                versionInfo = `\nエクスポート日時: ${exportDate}`;
+                            }
+                            
+                            showAlert(`Boxからテンプレートを読み込みました。${versionInfo}`, 'success');
+                        } else {
+                            throw new Error('Invalid JSON format');
+                        }
+                    } else if (fileName.endsWith('.csv')) {
+                        const csv = e.target.result;
+                        const lines = csv.split('\n');
+                        
+                        // CSVの処理ロジック
+                        for (let i = 1; i < lines.length; i++) {
+                            const line = lines[i].trim();
+                            if (!line) continue;
+                            
+                            const [dayName, taskName, startTime, duration] = line.split(',');
+                            
+                            if (dayName && taskName && startTime && duration) {
+                                const dayIndex = weekdays.indexOf(dayName);
+                                if (dayIndex >= 0) {
+                                    const dayKey = weekdaysEn[dayIndex];
+                                    
+                                    if (!importedTemplates[dayKey]) {
+                                        importedTemplates[dayKey] = [];
+                                    }
+                                    
+                                    importedTemplates[dayKey].push({
+                                        name: taskName,
+                                        startTime: startTime,
+                                        duration: parseInt(duration)
+                                    });
+                                }
+                            }
+                        }
+                        
+                        showAlert('BoxからCSVテンプレートを読み込みました。', 'success');
+                    }
+                    
+                    // 既存データとの統合確認
+                    const existingCount = Object.keys(dayTemplates).length;
+                    if (existingCount > 0) {
+                        if (confirm(`既存のテンプレートデータがあります。\n上書きしますか？\n\n「OK」= 上書き（既存データは削除）\n「キャンセル」= 統合（重複は上書き）`)) {
+                            dayTemplates = importedTemplates;
+                        } else {
+                            // 統合処理
+                            Object.keys(importedTemplates).forEach(dayKey => {
+                                dayTemplates[dayKey] = importedTemplates[dayKey];
+                            });
+                        }
+                    } else {
+                        dayTemplates = importedTemplates;
+                    }
+                    
+                    saveTemplates();
+                    updateTemplateStatus();
+                    renderTemplateList();
+                    
+                } catch (error) {
+                    console.error('Import error:', error);
+                    alert('ファイルの読み込みに失敗しました。\nファイル形式を確認してください。');
+                }
+            };
+            
+            reader.readAsText(file);
+            event.target.value = ''; // ファイル選択をリセット
         }
         
         // イベントリスナーの設定
@@ -1012,7 +1302,7 @@
             dayTemplates[dayKey] = templateTasks;
             saveTemplates();
             
-            showAlert(`${dayName}曜日の標準スケジュールとして保存しました（${templateTasks.length}件）`, 'success');
+            showAlert(`${dayName}曜日の標準スケジュールとして保存しました（${templateTasks.length}件）\n\n💡 重要: Box同期のため「Boxアップロード用ファイル作成」を実行してください。`, 'success');
             updateTemplateStatus();
             renderTemplateList();
         }
@@ -1458,7 +1748,7 @@
             
             setTimeout(() => {
                 alertContainer.innerHTML = '';
-            }, 5000);
+            }, 7000);
         }
         
         // ドラッグ&ドロップイベント
