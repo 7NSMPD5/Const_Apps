@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勤務予定入力システム｜操作マニュアル</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1a1a2e;
+            --ink-light: #4a4a6a;
+            --ink-muted: #8888aa;
+            --paper: #fafaf8;
+            --paper-warm: #f5f3ef;
+            --accent: #2d6a9f;
+            --accent-light: #e8f1f8;
+            --accent-warm: #e07b39;
+            --success: #2a7a4b;
+            --warn: #9a6b00;
+            --danger: #a83232;
+            --info: #1a7a85;
+            --border: #e2ddd8;
+            --border-strong: #c8c3bb;
+            --sidebar-w: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: var(--paper);
+            color: var(--ink);
+            line-height: 1.8;
+            font-weight: 300;
+        }
+
+        /* ── Layout ── */
+        .layout {
+            display: grid;
+            grid-template-columns: var(--sidebar-w) 1fr;
+            min-height: 100vh;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            background: var(--ink);
+            color: #ccc;
+            padding: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-logo {
+            padding: 32px 24px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .sidebar-logo .title-ja {
+            font-family: 'Noto Serif JP', serif;
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1.5;
+        }
+
+        .sidebar-logo .title-sub {
+            font-size: 11px;
+            color: var(--ink-muted);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .sidebar-nav {
+            padding: 20px 0;
+            flex: 1;
+        }
+
+        .nav-group-label {
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            color: #555577;
+            text-transform: uppercase;
+            padding: 16px 24px 6px;
+        }
+
+        .nav-item {
+            display: block;
+            padding: 9px 24px;
+            font-size: 13px;
+            color: #9999bb;
+            text-decoration: none;
+            transition: all 0.15s;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.05);
+            border-left-color: var(--accent);
+        }
+
+        .nav-item.active {
+            color: #fff;
+            border-left-color: var(--accent-warm);
+            background: rgba(255,255,255,0.04);
+        }
+
+        /* ── Main ── */
+        .main {
+            padding: 0;
+        }
+
+        /* ── Hero ── */
+        .hero {
+            background: linear-gradient(135deg, var(--ink) 0%, #2d3561 100%);
+            color: white;
+            padding: 64px 72px 56px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -40px; right: -40px;
+            width: 320px; height: 320px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(45,106,159,0.35) 0%, transparent 70%);
+        }
+
+        .hero-badge {
+            display: inline-block;
+            font-size: 11px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 4px 14px;
+            color: rgba(255,255,255,0.75);
+            margin-bottom: 20px;
+        }
+
+        .hero h1 {
+            font-family: 'Noto Serif JP', serif;
+            font-size: 36px;
+            font-weight: 600;
+            line-height: 1.4;
+            margin-bottom: 16px;
+        }
+
+        .hero p {
+            font-size: 15px;
+            color: rgba(255,255,255,0.65);
+            max-width: 560px;
+            line-height: 1.8;
+        }
+
+        .hero-meta {
+            margin-top: 32px;
+            display: flex;
+            gap: 32px;
+        }
+
+        .hero-meta-item {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .hero-meta-item span {
+            display: block;
+            font-size: 14px;
+            color: rgba(255,255,255,0.85);
+            margin-top: 2px;
+        }
+
+        /* ── Content ── */
+        .content {
+            padding: 64px 72px;
+            max-width: 860px;
+        }
+
+        /* ── Sections ── */
+        .doc-section {
+            margin-bottom: 72px;
+        }
+
+        .section-anchor {
+            display: block;
+            position: relative;
+            top: -80px;
+            visibility: hidden;
+        }
+
+        .section-eyebrow {
+            font-size: 11px;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .section-title {
+            font-family: 'Noto Serif JP', serif;
+            font-size: 26px;
+            font-weight: 600;
+            color: var(--ink);
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 28px;
+        }
+
+        .subsection-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--ink);
+            margin: 32px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .subsection-title::before {
+            content: '';
+            width: 4px; height: 16px;
+            background: var(--accent);
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        p {
+            margin-bottom: 14px;
+            font-size: 14px;
+            color: var(--ink-light);
+        }
+
+        /* ── Cards ── */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+        }
+
+        .card-icon {
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--ink);
+            margin-bottom: 4px;
+        }
+
+        .card-desc {
+            font-size: 12px;
+            color: var(--ink-muted);
+            line-height: 1.6;
+        }
+
+        /* ── Steps ── */
+        .steps {
+            counter-reset: step;
+            margin: 20px 0;
+        }
+
+        .step {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            align-items: flex-start;
+        }
+
+        .step-num {
+            counter-increment: step;
+            flex-shrink: 0;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-body {
+            flex: 1;
+            padding-top: 4px;
+        }
+
+        .step-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .step-desc {
+            font-size: 13px;
+            color: var(--ink-light);
+            line-height: 1.7;
+        }
+
+        /* ── Callouts ── */
+        .callout {
+            border-radius: 6px;
+            padding: 16px 20px;
+            margin: 20px 0;
+            font-size: 13px;
+            line-height: 1.7;
+            display: flex;
+            gap: 12px;
+        }
+
+        .callout-icon { font-size: 18px; flex-shrink: 0; }
+
+        .callout-body { flex: 1; }
+
+        .callout-title { font-weight: 500; margin-bottom: 4px; }
+
+        .callout.info    { background: var(--accent-light); border-left: 4px solid var(--accent); color: #1a3a5c; }
+        .callout.warning { background: #fff8e8; border-left: 4px solid #e0a800; color: #5a3d00; }
+        .callout.success { background: #edf7f1; border-left: 4px solid var(--success); color: #1a4a2e; }
+        .callout.danger  { background: #fdf0f0; border-left: 4px solid var(--danger); color: #5a1a1a; }
+        .callout.tip     { background: #f3eff8; border-left: 4px solid #7050a0; color: #3a2060; }
+
+        /* ── Table ── */
+        .doc-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin: 20px 0;
+        }
+
+        .doc-table th {
+            background: var(--ink);
+            color: white;
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+        }
+
+        .doc-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--ink-light);
+            vertical-align: top;
+        }
+
+        .doc-table tr:nth-child(even) td { background: var(--paper-warm); }
+
+        /* ── Badge ── */
+        .badge {
+            display: inline-block;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .badge-blue   { background: var(--accent-light); color: var(--accent); }
+        .badge-green  { background: #edf7f1; color: var(--success); }
+        .badge-orange { background: #fff0e4; color: #c05a00; }
+        .badge-red    { background: #fdf0f0; color: var(--danger); }
+        .badge-cyan   { background: #e8f7f9; color: var(--info); }
+        .badge-gray   { background: #f0eee9; color: #555; }
+
+        /* ── Key label ── */
+        .key {
+            display: inline-block;
+            background: white;
+            border: 1px solid var(--border-strong);
+            border-bottom: 2px solid var(--border-strong);
+            border-radius: 4px;
+            padding: 1px 7px;
+            font-size: 11px;
+            font-family: monospace;
+            color: var(--ink);
+        }
+
+        /* ── Screen UI mock ── */
+        .ui-mock {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .ui-mock-title {
+            font-size: 11px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--ink-muted);
+            margin-bottom: 14px;
+        }
+
+        .tab-bar-demo {
+            display: flex;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 14px;
+        }
+
+        .tab-demo {
+            padding: 8px 16px;
+            font-size: 12px;
+            color: var(--ink-muted);
+            cursor: default;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab-demo.active {
+            color: white;
+            background: var(--ink);
+            border-bottom-color: var(--ink);
+        }
+
+        /* ── TOC ── */
+        .toc {
+            background: var(--paper-warm);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px 28px;
+            margin: 32px 0 48px;
+        }
+
+        .toc-title {
+            font-size: 12px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--ink-muted);
+            margin-bottom: 14px;
+        }
+
+        .toc-list {
+            list-style: none;
+            column-count: 2;
+            column-gap: 24px;
+        }
+
+        .toc-list li {
+            margin-bottom: 6px;
+        }
+
+        .toc-list a {
+            font-size: 13px;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .toc-list a:hover { text-decoration: underline; }
+
+        /* ── Flow diagram ── */
+        .flow {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            flex-wrap: wrap;
+            margin: 20px 0;
+            font-size: 12px;
+        }
+
+        .flow-step {
+            background: var(--accent);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .flow-arrow {
+            color: var(--ink-muted);
+            padding: 0 8px;
+            font-size: 16px;
+        }
+
+        /* ── Divider ── */
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 48px 0;
+        }
+
+        /* ── Print / mobile ── */
+        @media (max-width: 900px) {
+            .layout { grid-template-columns: 1fr; }
+            .sidebar { position: static; height: auto; }
+            .content, .hero { padding: 32px 24px; }
+            .toc-list { column-count: 1; }
+        }
+
+        @media print {
+            .sidebar { display: none; }
+            .layout { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout">
+
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="title-ja">勤務予定入力システム</div>
+            <div class="title-sub">User Manual · v1.0</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-group-label">はじめに</div>
+            <a class="nav-item" href="#overview">システム概要</a>
+            <a class="nav-item" href="#flow">基本的な使い方の流れ</a>
+
+            <div class="nav-group-label">各タブの操作</div>
+            <a class="nav-item" href="#tab-basic">① 基本情報タブ</a>
+            <a class="nav-item" href="#tab-tasks">② タスク予定タブ</a>
+            <a class="nav-item" href="#tab-output">③ 出力タブ</a>
+            <a class="nav-item" href="#tab-template">④ テンプレートタブ</a>
+
+            <div class="nav-group-label">便利な機能</div>
+            <a class="nav-item" href="#feat-conflict">重複チェック</a>
+            <a class="nav-item" href="#feat-autoadjust">時間の自動調整</a>
+            <a class="nav-item" href="#feat-box">Box連携</a>
+
+            <div class="nav-group-label">補足</div>
+            <a class="nav-item" href="#faq">よくある質問</a>
+            <a class="nav-item" href="#tips">運用のヒント</a>
+        </nav>
+    </aside>
+
+    <!-- ── Main ── -->
+    <main class="main">
+        <!-- Hero -->
+        <div class="hero">
+            <div class="hero-badge">操作マニュアル</div>
+            <h1>勤務予定入力システム</h1>
+            <p>日々の勤務予定とタスクを入力し、報告用テキストをワンクリックで生成するシステムです。テンプレート機能や Box 連携により、繰り返し作業を大幅に効率化できます。</p>
+            <div class="hero-meta">
+                <div class="hero-meta-item">対象<span>全スタッフ</span></div>
+                <div class="hero-meta-item">バージョン<span>1.0</span></div>
+                <div class="hero-meta-item">動作環境<span>PC・スマートフォン対応</span></div>
+            </div>
+        </div>
+
+        <div class="content">
+
+            <!-- TOC -->
+            <div class="toc">
+                <div class="toc-title">目次</div>
+                <ul class="toc-list">
+                    <li><a href="#overview">1. システム概要</a></li>
+                    <li><a href="#flow">2. 基本的な使い方の流れ</a></li>
+                    <li><a href="#tab-basic">3. 基本情報タブ</a></li>
+                    <li><a href="#tab-tasks">4. タスク予定タブ</a></li>
+                    <li><a href="#tab-output">5. 出力タブ</a></li>
+                    <li><a href="#tab-template">6. テンプレートタブ</a></li>
+                    <li><a href="#feat-conflict">7. 重複チェック機能</a></li>
+                    <li><a href="#feat-autoadjust">8. 時間の自動調整</a></li>
+                    <li><a href="#feat-box">9. Box連携</a></li>
+                    <li><a href="#faq">10. よくある質問</a></li>
+                    <li><a href="#tips">11. 運用のヒント</a></li>
+                </ul>
+            </div>
+
+            <!-- 1. Overview -->
+            <section class="doc-section">
+                <span class="section-anchor" id="overview"></span>
+                <div class="section-eyebrow">Section 01</div>
+                <h2 class="section-title">システム概要</h2>
+
+                <p>このシステムは、勤務日ごとの <strong>予定・タスク</strong> を入力し、チームや上司への報告に使うテキストを自動生成するツールです。ブラウザ上で動作するため、インストール不要で使用できます。</p>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-icon">📋</div>
+                        <div class="card-title">基本情報の入力</div>
+                        <div class="card-desc">名前・勤務形態・日付・就業時間をまとめて設定できます</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">✅</div>
+                        <div class="card-title">タスク管理</div>
+                        <div class="card-desc">タスクの追加・並び替え・時間調整をかんたんに行えます</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">📤</div>
+                        <div class="card-title">テキスト出力</div>
+                        <div class="card-desc">報告用テキストをワンクリックで生成・コピーできます</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">📦</div>
+                        <div class="card-title">テンプレート管理</div>
+                        <div class="card-desc">曜日別スケジュールを保存して毎回の入力を省力化できます</div>
+                    </div>
+                </div>
+
+                <h3 class="subsection-title">タブ構成</h3>
+
+                <div class="ui-mock">
+                    <div class="ui-mock-title">画面上部のタブナビゲーション</div>
+                    <div class="tab-bar-demo">
+                        <div class="tab-demo active">基本情報</div>
+                        <div class="tab-demo">タスク予定</div>
+                        <div class="tab-demo">出力</div>
+                        <div class="tab-demo">テンプレート</div>
+                    </div>
+                    <p style="font-size:12px; color: var(--ink-muted);">タブをクリックすると各機能に切り替わります。</p>
+                </div>
+            </section>
+
+            <!-- 2. Flow -->
+            <section class="doc-section">
+                <span class="section-anchor" id="flow"></span>
+                <div class="section-eyebrow">Section 02</div>
+                <h2 class="section-title">基本的な使い方の流れ</h2>
+
+                <p>毎朝の利用は以下の順番で行うことを推奨します。</p>
+
+                <div class="flow">
+                    <div class="flow-step">① 基本情報を入力</div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">② タスクを登録</div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">③ 出力を生成</div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">④ コピーして報告</div>
+                </div>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-num">1</div>
+                        <div class="step-body">
+                            <div class="step-title">基本情報タブを開き、名前・勤務形態・日付・就業時間を確認・設定する</div>
+                            <div class="step-desc">日付は本日が自動でセットされます。就業時間はデフォルト 08:30〜17:30（昼休み 12:00〜13:00）です。テンプレートを保存済みの場合は「この曜日の標準スケジュール読み込み」でタスクも一括読み込みできます。</div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num">2</div>
+                        <div class="step-body">
+                            <div class="step-title">タスク予定タブでその日のタスクを追加する</div>
+                            <div class="step-desc">「よく使うタスク」ボタンをクリックするとすぐに追加できます。個別に名前と時間を入力することも可能です。ドラッグ＆ドロップで順番を入れ替えられます。</div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num">3</div>
+                        <div class="step-body">
+                            <div class="step-title">出力タブで「出力生成」ボタンを押す</div>
+                            <div class="step-desc">基本情報とタスク一覧を統合した報告用テキストが自動生成されます。</div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num">4</div>
+                        <div class="step-body">
+                            <div class="step-title">「コピー」ボタンを押してクリップボードに取得し、報告先に貼り付ける</div>
+                            <div class="step-desc">メールやチャットツール等にそのまま貼り付けて報告できます。</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. 基本情報 -->
+            <section class="doc-section">
+                <span class="section-anchor" id="tab-basic"></span>
+                <div class="section-eyebrow">Section 03</div>
+                <h2 class="section-title">① 基本情報タブ</h2>
+
+                <p>名前・勤務形態・日付・就業時間を設定する画面です。出力テキストのヘッダー部分に反映されます。</p>
+
+                <h3 class="subsection-title">入力フィールド</h3>
+
+                <table class="doc-table">
+                    <thead>
+                        <tr>
+                            <th>フィールド</th>
+                            <th>説明</th>
+                            <th>初期値</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>名前</strong></td>
+                            <td>出力テキストの先頭に表示される氏名</td>
+                            <td>山田</td>
+                        </tr>
+                        <tr>
+                            <td><strong>勤務形態</strong></td>
+                            <td>「本社勤務」「在宅勤務」「その他」から選択。「その他」を選ぶと自由入力欄が表示されます</td>
+                            <td>本社勤務</td>
+                        </tr>
+                        <tr>
+                            <td><strong>日付</strong></td>
+                            <td>勤務日の日付。本日の日付が自動でセットされます</td>
+                            <td>本日</td>
+                        </tr>
+                        <tr>
+                            <td><strong>曜日</strong></td>
+                            <td>日付に連動して自動表示。読み取り専用です</td>
+                            <td>自動</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 class="subsection-title">就業時間の設定</h3>
+
+                <p>「開始」「昼休開始」「昼休終了」「終了」の4つの時刻を <span class="key">◀</span> <span class="key">▶</span> ボタンで 15分単位で調整できます。</p>
+
+                <table class="doc-table">
+                    <thead>
+                        <tr>
+                            <th>時刻</th>
+                            <th>初期値</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>開始時刻</td><td>08:30</td></tr>
+                        <tr><td>昼休み開始</td><td>12:00</td></tr>
+                        <tr><td>昼休み終了</td><td>13:00</td></tr>
+                        <tr><td>終了時刻</td><td>17:30</td></tr>
+                    </tbody>
+                </table>
+
+                <p>設定に基づいて <strong>予定総時間</strong>（例: 8.0H）が画面に自動計算されます。</p>
+
+                <h3 class="subsection-title">標準スケジュールの読み込み</h3>
+
+                <p>「<strong>この曜日の標準スケジュール読み込み</strong>」ボタンを押すと、現在の曜日に紐づいたテンプレートのタスクが自動でロードされます。曜日ごとのテンプレートは「テンプレートタブ」で事前に保存しておく必要があります。</p>
+
+                <div class="callout info">
+                    <div class="callout-icon">ℹ️</div>
+                    <div class="callout-body">
+                        <div class="callout-title">テンプレートが未保存の場合</div>
+                        テンプレートが保存されていない曜日には「（未登録）」と表示されます。テンプレート管理タブから登録してください。
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. タスク予定 -->
+            <section class="doc-section">
+                <span class="section-anchor" id="tab-tasks"></span>
+                <div class="section-eyebrow">Section 04</div>
+                <h2 class="section-title">② タスク予定タブ</h2>
+
+                <p>その日に行う予定のタスクを登録・管理する画面です。</p>
+
+                <h3 class="subsection-title">よく使うタスクのクイック追加</h3>
+
+                <p>画面上部に表示されるよく使うタスクボタンをクリックすると、設定済みの所要時間でタスクが即追加されます。</p>
+
+                <table class="doc-table">
+                    <thead>
+                        <tr>
+                            <th>タスク名</th>
+                            <th>デフォルト時間</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>作業</td><td>120分（2.0H）</td></tr>
+                        <tr><td>社内打合せ</td><td>60分（1.0H）</td></tr>
+                        <tr><td>社外打合せ</td><td>90分（1.5H）</td></tr>
+                        <tr><td>議事入力</td><td>30分（0.5H）</td></tr>
+                        <tr><td>タスク対応</td><td>60分（1.0H）</td></tr>
+                        <tr><td>部署内会議</td><td>60分（1.0H）</td></tr>
+                    </tbody>
+                </table>
+
+                <h3 class="subsection-title">手動でタスクを追加する</h3>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-num">1</div>
+                        <div class="step-body">
+                            <div class="step-title">「タスク名」欄に任意の名前を入力する</div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num">2</div>
+                        <div class="step-body">
+                            <div class="step-title">「所要時間（分）」に分数を入力する（15分単位）</div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num">3</div>
+                        <div class="step-body">
+                            <div class="step-title">「追加」ボタンをクリックする</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="subsection-title">タスクの操作</h3>
+
+                <p>各タスク行には以下の操作ができます。</p>
+
+                <table class="doc-table">
+                    <thead>
+                        <tr>
+                            <th>操作</th>
+                            <th>方法</th>
+                            <th>説明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>名前の変更</strong></td>
+                            <td>テキストを直接クリックして編集</td>
+                            <td>タスク名は一覧上で直接書き換えられます</td>
+                        </tr>
+                        <tr>
+                            <td><strong>開始時刻の変更</strong></td>
+                            <td>時刻横の <span class="key">◀</span> <span class="key">▶</span> ボタン</td>
+                            <td>15分単位で前後に移動できます</td>
+                        </tr>
+                        <tr>
+                            <td><strong>所要時間の変更</strong></td>
+                            <td>時間表示横の <span class="key">◀</span> <span class="key">▶</span> ボタン</td>
+                            <td>15分単位で増減できます</td>
+                        </tr>
+                        <tr>
+                            <td><strong>並び替え</strong></td>
+                            <td>左端の <strong>≡</strong> ハンドルをドラッグ</td>
+                            <td>ドラッグ＆ドロップで順序を入れ替えられます</td>
+                        </tr>
+                        <tr>
+                            <td><strong>複製</strong></td>
+                            <td><span class="badge badge-cyan">複製</span> ボタン</td>
+                            <td>同じタスクをコピーして追加します</td>
+                        </tr>
+                        <tr>
+                            <td><strong>削除</strong></td>
+                            <td><span class="badge badge-red">削除</span> ボタン</td>
+                            <td>タスクを一覧から削除します</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 class="subsection-title">一括操作ボタン</h3>
+
+                <table class="doc-table">
+                    <thead>
+                        <tr>
+                            <th>ボタン</th>
+                            <th>機能</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-gray">時間順に並び替え</span></td>
+                            <td>タスクを開始時刻の昇順に自動で並べ替えます</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-orange">時間を自動調整</span></td>
+                            <td>タスクを順番に詰めて、重複なく自動的に時刻を再配置します</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-cyan">重複チェック</span></td>
+                            <td>時間の重複・昼休みとの重複を検出して警告します</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-green">この曜日の標準スケジュールとして保存</span></td>
+                            <td>現在のタスク一覧を曜日テンプレートとして保存します</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="callout warning">
+                    <div class="callout-icon">⚠️</div>
+                    <div class="callout-body">
+                        <div class="callout-title">昼休み重複の警告</div>
+                        昼休み（12:00〜13:00）にかかるタスクには ⚠️ マークが表示され、行が黄色でハイライトされます。
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. 出力タブ -->
+            <section class="doc-section">
+                <span class="section-anchor" id="tab-output"></span>
+                <div class="section-eyebrow">Section 05</div>
+                <h2 class="section-title">③ 出力タブ</h2>
+
+                <p>入力した情報をもとに、報告用テキストを生成するタブです。</p>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-num">1</div>
+                        <div class="step-body">
+                            <div class="step-title">「出力生成」ボタンを押す</div>
+                            <div class="step-desc">基本情報タブ・タスク予定タブの内容をもとにテキストが生成されます。</div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num">2</div>
+                        <div class="step-body">
+                            <div class="step-title">テキストを確認する</div>
+                            <div class="step-desc">テキストエリアに以下の形式で出力されます。</div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num">3</div>
+                        <div class="step-body">
+                            <div class="step-title">「コピー」ボタンを押してクリップボードに取得する</div>
+                            <div class="step-desc">コピー後、報告先のツールに貼り付けてご利用ください。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="subsection-title">出力テキストのフォーマット</h3>
+
+                <div class="ui-mock">
+                    <div class="ui-mock-title">出力テキスト例</div>
+                    <pre style="font-size:12px; line-height:1.8; color: var(--ink-light); white-space: pre-wrap;">タイトル（ノート名）
+山田　本社勤務　6/5（木）
+
+入力内容
+就業時間（予定）　　　　　　（実績）
+08:30〜 12:00（3.5H)　 　08:30～12:00（3.5H）
+13:00〜17:30 （4.5H)　  13:00〜：0（.H）
+計 8.0H　　　　　　　計　.H
+
+タスク
+部署内MTG　   09:00〜10:00
+社内打合せ　   10:00〜11:00
+作業　         11:00〜12:00
+タスク対応　   13:00〜14:00</pre>
+                </div>
+
+                <div class="callout info">
+                    <div class="callout-icon">ℹ️</div>
+                    <div class="callout-body">
+                        <div class="callout-title">出力前に日付を入力してください</div>
+                        日付が未入力の状態で「出力生成」を押すとアラートが表示されます。基本情報タブに戻って日付を設定してください。
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. テンプレートタブ -->
+            <section class="doc-section">
+                <span class="section-anchor" id="tab-template"></span>
+                <div class="section-eyebrow">Section 06</div>
+                <h2 class="section-title">④ テンプレートタブ</h2>
+
+                <p>曜日ごとのタスクテンプレートの管理と、Box へのバックアップ/復元を行うタブです。</p>
+
+                <h3 class="subsection-title">テンプレートの保存方法</h3>
+
+                <p>タスク予定タブでタスクを登録した状態で「<strong>この曜日の標準スケジュールとして保存</strong>」ボタンを押すと、現在の曜日のテンプレートとして LocalStorage に保存されます。</p>
+
+                <div class="callout success">
+                    <div class="callout-icon">✅</div>
+                    <div class="callout-body">
+                        <div class="callout-title">テンプレートは曜日ごとに管理されます</div>
+                        月〜日それぞれ独立して保存できます。曜日を変えて同じ操作をすると、その曜日のテンプレートが設定されます。
+                    </div>
+                </div>
+
+                <h3 class="subsection-title">ローカルバックアップ・復元</h3>
+
+                <table class="doc-table">
+                    <thead>
+                        <tr>
+                            <th>ボタン</th>
+                            <th>動作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-blue">JSONエクスポート</span></td>
+                            <td>全テンプレートを JSON ファイルとしてダウンロードします</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-blue">CSVエクスポート</span></td>
+                            <td>全テンプレートを CSV ファイルとしてダウンロードします</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-gray">JSONファイル読み込み</span></td>
+                            <td>保存済みの JSON ファイルを選択して復元します</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-gray">CSVファイル読み込み</span></td>
+                            <td>保存済みの CSV ファイルを選択して復元します</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-red">全テンプレートクリア</span></td>
+                            <td>すべてのテンプレートを削除します。実行前に必ずエクスポートしてください</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <hr>
+
+            <!-- 7. 重複チェック -->
+            <section class="doc-section">
+                <span class="section-anchor" id="feat-conflict"></span>
+                <div class="section-eyebrow">Feature</div>
+                <h2 class="section-title">重複チェック機能</h2>
+
+                <p>タスク予定タブの「<strong>重複チェック</strong>」ボタンを押すと、登録されたタスク間で時間が被っていないかを自動検出します。</p>
+
+                <table class="doc-table">
+                    <thead>
+                        <tr>
+                            <th>警告の種類</th>
+                            <th>表示色</th>
+                            <th>意味</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>時間の重複</td>
+                            <td style="color: var(--danger);">🔴 赤枠</td>
+                            <td>2つのタスクの時間帯が重なっています</td>
+                        </tr>
+                        <tr>
+                            <td>昼休みとの重複</td>
+                            <td style="color: #9a6b00;">🟡 黄色枠</td>
+                            <td>タスクが昼休み（12:00〜13:00）にかかっています</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="callout tip">
+                    <div class="callout-icon">💡</div>
+                    <div class="callout-body">
+                        <div class="callout-title">重複解消のヒント</div>
+                        「時間を自動調整」ボタンを使うと、タスクが重複しないよう開始時刻を自動で詰めてくれます。
+                    </div>
+                </div>
+            </section>
+
+            <!-- 8. 自動調整 -->
+            <section class="doc-section">
+                <span class="section-anchor" id="feat-autoadjust"></span>
+                <div class="section-eyebrow">Feature</div>
+                <h2 class="section-title">時間の自動調整</h2>
+
+                <p>「<strong>時間を自動調整</strong>」ボタンを押すと、タスク一覧の順番をもとに、開始時刻から連続してタスクが詰まるよう自動的に時刻を設定し直します。</p>
+
+                <div class="callout warning">
+                    <div class="callout-icon">⚠️</div>
+                    <div class="callout-body">
+                        <div class="callout-title">昼休み時間は自動でスキップされます</div>
+                        自動調整は昼休み（12:00〜13:00）の時間帯を自動で回避します。昼休みにかかるタスクは終了後（13:00）に続きが配置されます。
+                    </div>
+                </div>
+            </section>
+
+            <!-- 9. Box連携 -->
+            <section class="doc-section">
+                <span class="section-anchor" id="feat-box"></span>
+                <div class="section-eyebrow">Feature</div>
+                <h2 class="section-title">Box連携（将来対応予定・現在未実装）</h2>
+
+                <div class="callout warning">
+                    <div class="callout-icon">🚧</div>
+                    <div class="callout-body">
+                        <div class="callout-title">この機能は現在未実装です</div>
+                        Box連携機能は将来のバージョンで対応予定です。現時点では画面上にボタンが表示されていますが、実際の連携動作は行われません。テンプレートのバックアップには、後述のローカルエクスポート（JSON / CSV）をご利用ください。
+                    </div>
+                </div>
+
+                <p>実装予定の内容（参考）：</p>
+
+                <h3 class="subsection-title">Boxへアップロードする手順（予定）</h3>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-num">1</div>
+                        <div class="step-body">
+                            <div class="step-title">「Boxアップロード用ファイル作成」ボタンをクリック</div>
+                            <div class="step-desc">JSON ファイルがダウンロードされます。ファイル名には自動的に日付が付与される予定です（例: schedule_templates_2026-06-05.json）。</div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num">2</div>
+                        <div class="step-body">
+                            <div class="step-title">ダウンロードされたファイルを Box の指定フォルダにアップロード</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="subsection-title">Boxからダウンロードして読み込む手順（予定）</h3>
+
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-num">1</div>
+                        <div class="step-body">
+                            <div class="step-title">Box から JSON または CSV ファイルをローカルにダウンロードする</div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-num">2</div>
+                        <div class="step-body">
+                            <div class="step-title">「Boxからファイル読み込み」ボタンをクリックし、ファイルを選択する</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <hr>
+
+            <!-- 10. FAQ -->
+            <section class="doc-section">
+                <span class="section-anchor" id="faq"></span>
+                <div class="section-eyebrow">Section 10</div>
+                <h2 class="section-title">よくある質問</h2>
+
+                <h3 class="subsection-title">Q. テンプレートを読み込んだらタスクが上書きされますか？</h3>
+                <p>はい。「この曜日の標準スケジュール読み込み」を実行すると、現在のタスク一覧がテンプレートの内容で置き換えられます。手動で追加したタスクが消えないよう、必要に応じて先に出力しておくことをお勧めします。</p>
+
+                <h3 class="subsection-title">Q. スマートフォンで使えますか？</h3>
+                <p>はい。モバイル対応のレイアウトになっています。画面幅が狭い端末では一部のレイアウトが縦並びに変わりますが、すべての機能をご利用いただけます。</p>
+
+                <h3 class="subsection-title">Q. データはどこに保存されますか？</h3>
+                <p>テンプレートデータはブラウザの <strong>LocalStorage</strong> に保存されます。ブラウザのキャッシュをクリアするとデータが消えますので、定期的に JSON または CSV でエクスポートしてバックアップしておくことをお勧めします。</p>
+
+                <h3 class="subsection-title">Q. 勤務形態に任意の内容を入力したい</h3>
+                <p>勤務形態のドロップダウンで「<strong>その他</strong>」を選択すると、自由入力テキストボックスが表示されます。ここに任意の勤務形態名を入力してください。</p>
+
+                <h3 class="subsection-title">Q. タスクの開始時刻はどのように決まりますか？</h3>
+                <p>タスクを追加した時点では、就業開始時刻（デフォルト 08:30）が初期値として設定されます。その後、<span class="key">◀</span> <span class="key">▶</span> ボタンで個別に調整するか、「時間を自動調整」ボタンで一括配置してください。</p>
+            </section>
+
+            <!-- 11. Tips -->
+            <section class="doc-section">
+                <span class="section-anchor" id="tips"></span>
+                <div class="section-eyebrow">Section 11</div>
+                <h2 class="section-title">運用のヒント</h2>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-icon">🗓️</div>
+                        <div class="card-title">曜日テンプレートを積極活用する</div>
+                        <div class="card-desc">定期的なミーティングや繰り返しタスクをテンプレートに登録しておくと、毎朝の入力時間を大幅に短縮できます。</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">💾</div>
+                        <div class="card-title">週1回 JSONでバックアップする</div>
+                        <div class="card-desc">LocalStorage のデータは消える場合があります。金曜日に JSON エクスポートしてバックアップを取る習慣をつけましょう。</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">⚡</div>
+                        <div class="card-title">自動調整→重複チェックの順で使う</div>
+                        <div class="card-desc">「時間を自動調整」で時刻を詰めてから「重複チェック」を実行すると効率よく確認できます。</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">📱</div>
+                        <div class="card-title">ホーム画面に追加する</div>
+                        <div class="card-desc">スマートフォンのブラウザから「ホーム画面に追加」することで、アプリのようにすばやく起動できます。</div>
+                    </div>
+                </div>
+            </section>
+
+            <p style="color: var(--ink-muted); font-size: 12px; text-align: center; margin-top: 40px; padding-bottom: 40px;">
+                勤務予定入力システム 操作マニュアル v1.0
+            </p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+    // Highlight active nav item on scroll
+    const anchors = document.querySelectorAll('.section-anchor');
+    const navItems = document.querySelectorAll('.nav-item');
+
+    window.addEventListener('scroll', () => {
+        let current = '';
+        anchors.forEach(anchor => {
+            const section = anchor.parentElement;
+            if (window.scrollY >= section.offsetTop - 120) {
+                current = anchor.id;
+            }
+        });
+        navItems.forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('href') === '#' + current) {
+                item.classList.add('active');
+            }
+        });
+    });
+
+    // Smooth scroll
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            const target = document.querySelector(item.getAttribute('href'));
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
