@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タスク管理</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f5f4f1;
+  --surface: #ffffff;
+  --surface2: #f0efe9;
+  --border: #dddbd3;
+  --border2: #c8c6bc;
+  --text: #1a1a18;
+  --text2: #6b6960;
+  --text3: #9c9a91;
+  --accent: #2d6a4f;
+  --accent-light: #e8f3ee;
+  --accent-text: #1b4332;
+  --danger: #b5362a;
+  --danger-light: #fdf0ee;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+body {
+  font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ===== HEADER ===== */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+
+/* ===== TABS ===== */
+.tab-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  padding: 0 24px;
+  gap: 0;
+}
+.tab-btn {
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text3);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.tab-btn:hover { color: var(--text2); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ===== TAB PANELS ===== */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ===== LAYOUT ===== */
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+.grid-2 {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.card-header {
+  padding: 14px 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+}
+.card-body { padding: 14px 16px 16px; }
+
+/* ===== FORM ===== */
+label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 4px; }
+.form-group { margin-bottom: 12px; }
+input[type="text"], input[type="url"], select, textarea {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface);
+  outline: none;
+  transition: border-color 0.15s;
+  appearance: none;
+}
+input[type="text"]:focus, input[type="url"]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,106,79,0.12); }
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239c9a91' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+  cursor: pointer;
+}
+.color-row { display: flex; gap: 8px; align-items: center; }
+.color-row input[type="text"] { flex: 1; }
+input[type="color"] {
+  width: 34px; height: 34px; padding: 2px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; background: none; flex-shrink: 0;
+}
+.required { color: var(--danger); }
+
+/* ===== BUTTONS ===== */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 14px; border-radius: var(--radius);
+  font-size: 13px; font-family: inherit; font-weight: 500;
+  cursor: pointer; border: 1px solid var(--border2);
+  background: var(--surface); color: var(--text);
+  transition: background 0.12s; text-decoration: none; white-space: nowrap;
+}
+.btn:hover { background: var(--surface2); }
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: #245c43; border-color: #245c43; }
+.btn-danger { color: var(--danger); border-color: #e8b4ae; }
+.btn-danger:hover { background: var(--danger-light); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.form-actions { display: flex; gap: 8px; margin-top: 4px; }
+.form-actions .btn-primary { flex: 1; justify-content: center; }
+
+/* ===== MANAGE TAB: task list ===== */
+.mgr-task-list { display: flex; flex-direction: column; }
+.mgr-task-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background 0.1s; min-width: 0;
+}
+.mgr-task-item:last-child { border-bottom: none; }
+.mgr-task-item:hover { background: var(--surface2); }
+.mgr-task-item.selected { background: var(--accent-light); }
+.task-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.1); }
+.task-name-cell { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.task-sol-badge {
+  font-size: 11px; padding: 1px 7px; border-radius: 20px;
+  flex-shrink: 0; white-space: nowrap;
+  background: var(--surface2); color: var(--text2);
+}
+.task-url-icon { font-size: 13px; color: var(--accent); flex-shrink: 0; }
+
+/* ===== LOG ===== */
+.log-panel {
+  background: var(--surface2);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  padding: 10px 16px; border-top: 1px solid var(--border);
+  max-height: 110px; overflow-y: auto;
+}
+.log-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 6px; }
+.log-entry { font-size: 11px; color: var(--text2); padding: 1px 0; display: flex; gap: 6px; }
+.log-time { color: var(--text3); flex-shrink: 0; }
+
+/* ===== IMPORT ZONE ===== */
+.import-zone {
+  border: 2px dashed var(--border2); border-radius: var(--radius);
+  padding: 20px; text-align: center; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.import-zone:hover, .import-zone.drag-over { border-color: var(--accent); background: var(--accent-light); }
+.import-zone p { font-size: 12px; color: var(--text3); margin-top: 6px; }
+.import-zone strong { color: var(--text2); font-size: 13px; }
+
+/* ===== EXECUTE TAB TOOLBAR ===== */
+.exec-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+}
+.exec-date { font-size: 13px; color: var(--text2); }
+.view-toggle { display: flex; gap: 4px; }
+.view-btn {
+  padding: 6px 10px; border-radius: var(--radius);
+  font-size: 13px; font-family: inherit; font-weight: 500;
+  cursor: pointer; border: 1px solid var(--border2);
+  background: var(--surface); color: var(--text2); transition: all 0.12s;
+}
+.view-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ===== EXECUTE: LIST VIEW ===== */
+.exec-list { display: flex; flex-direction: column; gap: 0; }
+.exec-list-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 16px; border-bottom: 1px solid var(--border);
+  background: var(--surface); transition: background 0.1s;
+  cursor: grab; user-select: none;
+}
+.exec-list-item:last-child { border-bottom: none; }
+.exec-list-item:hover { background: var(--surface2); }
+.exec-list-item.has-url { cursor: grab; }
+.exec-list-item.drag-over-top { border-top: 2px solid var(--accent); }
+.exec-list-item.drag-over-bottom { border-bottom: 2px solid var(--accent); }
+.drag-handle { font-size: 16px; color: var(--text3); cursor: grab; flex-shrink: 0; line-height: 1; }
+.exec-sol-pill {
+  font-size: 11px; font-weight: 600; padding: 2px 9px;
+  border-radius: 20px; flex-shrink: 0; white-space: nowrap;
+  color: #fff;
+}
+.exec-task-name {
+  flex: 1; font-size: 13px; font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.exec-link-btn {
+  font-size: 12px; padding: 4px 10px;
+  border: 1px solid var(--border2); border-radius: var(--radius);
+  background: var(--surface); color: var(--accent);
+  cursor: pointer; font-family: inherit; font-weight: 500;
+  transition: background 0.12s; flex-shrink: 0; white-space: nowrap;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+}
+.exec-link-btn:hover { background: var(--accent-light); }
+.exec-no-url { font-size: 11px; color: var(--text3); flex-shrink: 0; }
+
+/* ===== EXECUTE: CARD VIEW ===== */
+.exec-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.exec-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 14px;
+  cursor: grab;
+  user-select: none;
+  transition: box-shadow 0.15s, transform 0.15s;
+  display: flex; flex-direction: column; gap: 8px;
+  position: relative;
+  min-height: 90px;
+}
+.exec-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.12); transform: translateY(-1px); }
+.exec-card.dragging { opacity: 0.4; }
+.exec-card.drag-over-card { outline: 2px solid var(--accent); outline-offset: 2px; }
+.exec-card-pill {
+  font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 20px; color: #fff;
+  align-self: flex-start; white-space: nowrap; letter-spacing: 0.03em;
+}
+.exec-card-name {
+  font-size: 13px; font-weight: 500; color: var(--text);
+  line-height: 1.4; flex: 1;
+}
+.exec-card-footer { display: flex; align-items: center; justify-content: space-between; }
+.exec-card-link {
+  font-size: 11px; color: var(--accent); text-decoration: none;
+  display: inline-flex; align-items: center; gap: 3px;
+  border: 1px solid var(--border2); border-radius: var(--radius);
+  padding: 3px 8px; background: var(--surface); font-weight: 500;
+  transition: background 0.12s;
+}
+.exec-card-link:hover { background: var(--accent-light); }
+.exec-card-drag { font-size: 14px; color: var(--text3); cursor: grab; }
+
+/* ===== DRAG GHOST ===== */
+.dragging-ghost {
+  opacity: 0.35;
+}
+
+/* ===== CHECKBOX ===== */
+.exec-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 17px;
+  height: 17px;
+  border: 2px solid var(--border2);
+  border-radius: 4px;
+  background: var(--surface);
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  transition: background 0.15s, border-color 0.15s;
+  display: inline-block;
+  vertical-align: middle;
+}
+.exec-checkbox:hover { border-color: var(--accent); }
+.exec-checkbox:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.exec-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px; top: 0px;
+  width: 5px; height: 9px;
+  border: 2px solid #fff;
+  border-top: none; border-left: none;
+  transform: rotate(45deg);
+}
+
+/* ===== DONE STATE ===== */
+.exec-list-item.done {
+  background: #f5f5f3 !important;
+  opacity: 0.55;
+}
+.exec-list-item.done .exec-task-name {
+  text-decoration: line-through;
+  color: var(--text3);
+}
+.exec-list-item.done .exec-sol-pill { opacity: 0.5; }
+.exec-list-item.done .exec-link-btn { opacity: 0.4; pointer-events: none; }
+
+.exec-card.done {
+  background: #f5f5f3 !important;
+  opacity: 0.5;
+}
+.exec-card.done .exec-card-name {
+  text-decoration: line-through;
+  color: var(--text3);
+}
+.exec-card.done .exec-card-pill { opacity: 0.5; }
+.exec-card.done .exec-card-link { opacity: 0.4; pointer-events: none; }
+
+/* card checkbox badge (top-right) */
+.card-check-wrap {
+  position: absolute;
+  top: 8px; right: 8px;
+}
+
+/* progress bar */
+.exec-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.exec-progress-bar-bg {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.exec-progress-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+.exec-progress-label {
+  font-size: 12px;
+  color: var(--text2);
+  white-space: nowrap;
+  min-width: 70px;
+  text-align: right;
+}
+
+/* ===== EMPTY ===== */
+.empty-state { padding: 32px 16px; text-align: center; color: var(--text3); font-size: 13px; }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(0);
+  background: var(--text); color: #fff;
+  padding: 8px 16px; border-radius: 20px;
+  font-size: 13px; font-weight: 500;
+  z-index: 100; opacity: 0; pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+/* ===== SOLUTION COLOR TABLE ===== */
+.sol-color-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+.sol-color-table td { padding: 5px 6px; vertical-align: middle; }
+.sol-color-table tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+.sol-name-cell { font-weight: 500; color: var(--text2); }
+.sol-color-preview { width: 18px; height: 18px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,0.1); vertical-align: middle; margin-right: 6px; }
+.sol-count { color: var(--text3); font-size: 11px; }
+
+@media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 タスク管理アプリ</h1>
+  <div class="header-actions">
+    <button class="btn btn-sm" id="exportBtn">📤 エクスポート</button>
+    <button class="btn btn-sm btn-primary" id="importBtnHeader">📥 インポート</button>
+    <input type="file" id="fileInput" accept=".json" style="display:none">
+  </div>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="exec">📅 本日のタスク！</button>
+  <button class="tab-btn" data-tab="manage">⚙️ タスク管理</button>
+</div>
+
+<!-- ===================== EXECUTE TAB ===================== -->
+<div class="tab-panel active" id="tab-exec">
+  <div class="main">
+    <div class="exec-toolbar">
+      <span class="exec-date" id="execDate"></span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-sm" id="clearCheckedBtn" style="display:none;">✅ チェックをクリア</button>
+        <div class="view-toggle">
+          <button class="view-btn active" id="viewListBtn">☰ リスト</button>
+          <button class="view-btn" id="viewCardBtn">⊞ カード</button>
+        </div>
+      </div>
+    </div>
+    <div class="exec-progress-wrap" id="execProgressWrap" style="display:none;">
+      <div class="exec-progress-bar-bg"><div class="exec-progress-bar-fill" id="execProgressFill" style="width:0%"></div></div>
+      <span class="exec-progress-label" id="execProgressLabel"></span>
+    </div>
+    <div id="execContainer"></div>
+  </div>
+</div>
+
+<!-- ===================== MANAGE TAB ===================== -->
+<div class="tab-panel" id="tab-manage">
+  <div class="main">
+    <div class="grid-2">
+
+      <!-- 左: 編集フォーム -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">タスク編集</span></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="taskSelect">既存タスクを選択</label>
+              <select id="taskSelect"><option value="">— 新規タスク —</option></select>
+            </div>
+            <div class="form-group">
+              <label for="taskNameInput">タスク名 <span class="required">*</span></label>
+              <input type="text" id="taskNameInput" placeholder="タスク名を入力">
+            </div>
+            <div class="form-group">
+              <label for="taskUrlInput">URL</label>
+              <input type="url" id="taskUrlInput" placeholder="https://...">
+            </div>
+            <div class="form-group">
+              <label for="solutionNameInput">ソリューション名</label>
+              <div class="color-row">
+                <input type="text" id="solutionNameInput" placeholder="例: Chrome / Box / Direct">
+                <input type="color" id="solutionColorInput" value="#2d6a4f" title="カラーを選択">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" id="saveTaskBtn">💾 保存</button>
+              <button class="btn btn-danger" id="deleteTaskBtn" style="display:none">🗑 削除</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ソリューションカラー管理 -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">ソリューション別カラー</span></div>
+          <div class="card-body" id="solColorPanel">
+            <p style="font-size:12px;color:var(--text3);">タスクを追加するとここに表示されます</p>
+          </div>
+        </div>
+
+        <!-- インポート -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">JSONインポート</span></div>
+          <div class="card-body">
+            <div class="import-zone" id="importZone">
+              <strong>JSONファイルをドロップ</strong>
+              <p>またはクリックしてファイルを選択</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 右: タスク一覧 + ログ -->
+      <div class="card" style="overflow:hidden;">
+        <div class="card-header" style="padding:14px 16px 12px;">
+          <span class="card-title">タスク一覧 <span id="taskCount" style="font-weight:400;"></span></span>
+          <button class="btn btn-sm btn-danger" id="clearAllBtn" style="display:none">全削除</button>
+        </div>
+        <div id="taskListContainer" class="mgr-task-list"></div>
+        <div class="log-panel">
+          <div class="log-label">操作ログ</div>
+          <div id="logContainer">
+            <div class="log-entry"><span class="log-time">—</span><span>ログなし</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'task_manager_v2';
+const SOL_COLOR_KEY = 'task_sol_colors_v2';
+const CHECK_KEY = 'task_checks_v2';
+
+let tasks = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let solColors = JSON.parse(localStorage.getItem(SOL_COLOR_KEY) || '{}');
+let logs = [];
+let execViewMode = 'list'; // 'list' | 'card'
+let dragSrcIdx = null;
+
+// ===================== CHECKED STATE =====================
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+
+function loadChecked() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CHECK_KEY) || '{}');
+    // 日付が今日でなければ自動クリア
+    if (raw.date !== todayStr()) {
+      localStorage.removeItem(CHECK_KEY);
+      return {};
+    }
+    return raw.ids || {};
+  } catch(e) { return {}; }
+}
+
+function saveChecked(checkedIds) {
+  localStorage.setItem(CHECK_KEY, JSON.stringify({ date: todayStr(), ids: checkedIds }));
+}
+
+let checkedIds = loadChecked(); // { taskId: true }
+
+function toggleChecked(id) {
+  if (checkedIds[id]) delete checkedIds[id];
+  else checkedIds[id] = true;
+  saveChecked(checkedIds);
+  updateProgress();
+  updateClearBtn();
+}
+
+function clearAllChecked() {
+  checkedIds = {};
+  saveChecked(checkedIds);
+  updateProgress();
+  updateClearBtn();
+  renderExec();
+}
+
+function updateProgress() {
+  const total = tasks.length;
+  const done = tasks.filter(t => checkedIds[t.id]).length;
+  const wrap = document.getElementById('execProgressWrap');
+  const fill = document.getElementById('execProgressFill');
+  const label = document.getElementById('execProgressLabel');
+  if (!total) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  const pct = Math.round(done / total * 100);
+  fill.style.width = pct + '%';
+  label.textContent = `${done} / ${total} 完了`;
+  // 全完了時に色を変える
+  fill.style.background = done === total ? '#27ae60' : 'var(--accent)';
+}
+
+function updateClearBtn() {
+  const btn = document.getElementById('clearCheckedBtn');
+  const hasDone = tasks.some(t => checkedIds[t.id]);
+  btn.style.display = hasDone ? 'inline-flex' : 'none';
+}
+
+// Default solution colors
+const DEFAULT_SOL_COLORS = {
+  'chrome': '#4285f4', 'direct': '#e74c3c', 'teams': '#6264a7',
+  'box': '#0061d5', 'company': '#e67e22', 'outlook': '#0072c6',
+  '組織カレンダー': '#34a853', 'sharepoint': '#036c70'
+};
+
+function getSolColor(sol) {
+  if (!sol) return '#9c9a91';
+  if (solColors[sol]) return solColors[sol];
+  const lc = sol.toLowerCase();
+  for (const [k, c] of Object.entries(DEFAULT_SOL_COLORS)) {
+    if (lc.includes(k) || k.includes(lc)) return c;
+  }
+  // Generate stable color from string hash
+  let hash = 0;
+  for (let i = 0; i < sol.length; i++) hash = sol.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue},55%,42%)`;
+}
+
+function saveSolColors() {
+  localStorage.setItem(SOL_COLOR_KEY, JSON.stringify(solColors));
+}
+
+function generateId() {
+  return 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+}
+
+function saveTasks() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg, dur = 2200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function addLog(msg) {
+  const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  logs.unshift({time: now, msg});
+  if (logs.length > 30) logs.pop();
+  renderLog();
+}
+
+function renderLog() {
+  const el = document.getElementById('logContainer');
+  if (!logs.length) {
+    el.innerHTML = '<div class="log-entry"><span class="log-time">—</span><span>ログなし</span></div>';
+    return;
+  }
+  el.innerHTML = logs.map(l =>
+    `<div class="log-entry"><span class="log-time">${escHtml(l.time)}</span><span>${escHtml(l.msg)}</span></div>`
+  ).join('');
+}
+
+// ===================== SOLUTION COLOR PANEL =====================
+function getUniqueSolutions() {
+  const map = {};
+  tasks.forEach(t => {
+    if (t.solution) {
+      if (!map[t.solution]) map[t.solution] = 0;
+      map[t.solution]++;
+    }
+  });
+  return map;
+}
+
+function renderSolColorPanel() {
+  const panel = document.getElementById('solColorPanel');
+  const solMap = getUniqueSolutions();
+  const sols = Object.keys(solMap);
+  if (!sols.length) {
+    panel.innerHTML = '<p style="font-size:12px;color:var(--text3);">タスクを追加するとここに表示されます</p>';
+    return;
+  }
+  panel.innerHTML = `<table class="sol-color-table"><tbody>
+    ${sols.map(sol => {
+      const color = getSolColor(sol);
+      const count = solMap[sol];
+      return `<tr>
+        <td><span class="sol-color-preview" style="background:${escHtml(color)};"></span><span class="sol-name-cell">${escHtml(sol)}</span></td>
+        <td><span class="sol-count">${count}件</span></td>
+        <td style="text-align:right;">
+          <input type="color" value="${escHtml(color)}" data-sol="${escHtml(sol)}"
+            style="width:28px;height:28px;padding:1px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:none;"
+            title="${escHtml(sol)}のカラーを変更">
+        </td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+
+  panel.querySelectorAll('input[type="color"]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const sol = inp.dataset.sol;
+      solColors[sol] = inp.value;
+      saveSolColors();
+      // Sync tasks that use this solution and don't have custom color override
+      tasks.forEach(t => {
+        if (t.solution === sol) t.color = inp.value;
+      });
+      saveTasks();
+      renderSolColorPanel();
+      renderTaskList();
+      renderExec();
+    });
+  });
+}
+
+// ===================== MANAGE: task list =====================
+const taskSelect = document.getElementById('taskSelect');
+const taskNameInput = document.getElementById('taskNameInput');
+const taskUrlInput = document.getElementById('taskUrlInput');
+const solutionNameInput = document.getElementById('solutionNameInput');
+const solutionColorInput = document.getElementById('solutionColorInput');
+
+function refreshTaskSelect() {
+  const cur = taskSelect.value;
+  taskSelect.innerHTML = '<option value="">— 新規タスク —</option>';
+  tasks.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t.id; o.textContent = t.name;
+    taskSelect.appendChild(o);
+  });
+  if (tasks.find(t => t.id === cur)) taskSelect.value = cur;
+  document.getElementById('taskCount').textContent = tasks.length ? `（${tasks.length}件）` : '';
+  document.getElementById('clearAllBtn').style.display = tasks.length ? 'inline-flex' : 'none';
+}
+
+function renderTaskList() {
+  const container = document.getElementById('taskListContainer');
+  if (!tasks.length) {
+    container.innerHTML = '<div class="empty-state">タスクがありません<br><small>フォームから追加、またはJSONをインポートしてください</small></div>';
+    return;
+  }
+  const curSel = taskSelect.value;
+  container.innerHTML = tasks.map(t => {
+    const color = t.color || getSolColor(t.solution);
+    const hasUrl = t.url && t.url.trim();
+    const sel = curSel === t.id ? ' selected' : '';
+    return `<div class="mgr-task-item${sel}" data-id="${escHtml(t.id)}" tabindex="0" role="button">
+      <span class="task-dot" style="background:${escHtml(color)};"></span>
+      <span class="task-name-cell">${escHtml(t.name)}</span>
+      ${t.solution ? `<span class="task-sol-badge" style="background:${escHtml(color)}22;color:${escHtml(color)};">${escHtml(t.solution)}</span>` : ''}
+      ${hasUrl ? `<span class="task-url-icon" title="${escHtml(t.url)}">🔗</span>` : ''}
+    </div>`;
+  }).join('');
+  container.querySelectorAll('.mgr-task-item').forEach(el => {
+    el.addEventListener('click', () => {
+      taskSelect.value = el.dataset.id;
+      taskSelect.dispatchEvent(new Event('change'));
+    });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') el.click(); });
+  });
+}
+
+function resetForm() {
+  taskSelect.value = '';
+  taskNameInput.value = '';
+  taskUrlInput.value = '';
+  solutionNameInput.value = '';
+  solutionColorInput.value = '#2d6a4f';
+  document.getElementById('deleteTaskBtn').style.display = 'none';
+  renderTaskList();
+}
+
+taskSelect.addEventListener('change', () => {
+  const sel = taskSelect.value;
+  if (!sel) {
+    taskNameInput.value = ''; taskUrlInput.value = '';
+    solutionNameInput.value = ''; solutionColorInput.value = '#2d6a4f';
+    document.getElementById('deleteTaskBtn').style.display = 'none';
+  } else {
+    const t = tasks.find(x => x.id === sel);
+    if (t) {
+      taskNameInput.value = t.name || '';
+      taskUrlInput.value = t.url || '';
+      solutionNameInput.value = t.solution || '';
+      solutionColorInput.value = t.color || getSolColor(t.solution);
+      document.getElementById('deleteTaskBtn').style.display = 'inline-flex';
+    }
+  }
+  renderTaskList();
+});
+
+solutionNameInput.addEventListener('input', () => {
+  solutionColorInput.value = getSolColor(solutionNameInput.value.trim());
+});
+
+document.getElementById('saveTaskBtn').addEventListener('click', () => {
+  const name = taskNameInput.value.trim();
+  const url = taskUrlInput.value.trim();
+  const solution = solutionNameInput.value.trim();
+  const color = solutionColorInput.value;
+  if (!name) { alert('タスク名は必須です。'); taskNameInput.focus(); return; }
+  if (solution) { solColors[solution] = color; saveSolColors(); }
+  const selectedId = taskSelect.value;
+  if (!selectedId) {
+    tasks.push({ id: generateId(), name, url, solution, color, solutionColor: color });
+    addLog('➕ 新規タスク追加: ' + name);
+    showToast('タスクを追加しました');
+  } else {
+    const idx = tasks.findIndex(t => t.id === selectedId);
+    if (idx >= 0) {
+      tasks[idx] = { ...tasks[idx], name, url, solution, color, solutionColor: color };
+      addLog('✏️ タスク更新: ' + name);
+      showToast('タスクを更新しました');
+    }
+  }
+  saveTasks();
+  refreshTaskSelect();
+  renderSolColorPanel();
+  resetForm();
+  renderExec();
+});
+
+document.getElementById('deleteTaskBtn').addEventListener('click', () => {
+  const selectedId = taskSelect.value;
+  if (!selectedId) return;
+  const t = tasks.find(x => x.id === selectedId);
+  if (!t || !confirm(`「${t.name}」を削除しますか？`)) return;
+  addLog('❌ タスク削除: ' + t.name);
+  tasks = tasks.filter(x => x.id !== selectedId);
+  saveTasks(); refreshTaskSelect(); renderSolColorPanel(); resetForm(); renderExec();
+  showToast('タスクを削除しました');
+});
+
+document.getElementById('clearAllBtn').addEventListener('click', () => {
+  if (!confirm('全タスクを削除しますか？この操作は元に戻せません。')) return;
+  addLog('🗑 全タスク削除（' + tasks.length + '件）');
+  tasks = [];
+  saveTasks(); refreshTaskSelect(); renderSolColorPanel(); resetForm(); renderExec();
+  showToast('全タスクを削除しました');
+});
+
+// ===================== EXPORT =====================
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(tasks, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tasks_export.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  addLog('📤 エクスポート（' + tasks.length + '件）');
+  showToast('エクスポートしました');
+});
+
+// ===================== IMPORT =====================
+function importJson(text) {
+  let data;
+  try { data = JSON.parse(text); } catch(e) { alert('JSONの解析に失敗しました。\n' + e.message); return; }
+  if (!Array.isArray(data)) { alert('JSONは配列形式である必要があります。'); return; }
+  let imported = 0, skipped = 0;
+  data.forEach(item => {
+    if (!item.name) { skipped++; return; }
+    const id = item.id || generateId();
+    const existIdx = tasks.findIndex(t => t.id === id);
+    const sol = item.solution || '';
+    const color = item.color || item.solutionColor || getSolColor(sol);
+    if (sol && !solColors[sol]) { solColors[sol] = color; }
+    const normalized = { id, name: item.name, url: item.url || '', solution: sol, solutionColor: color, color };
+    if (existIdx >= 0) tasks[existIdx] = normalized; else tasks.push(normalized);
+    imported++;
+  });
+  saveTasks(); saveSolColors();
+  refreshTaskSelect(); renderSolColorPanel(); renderTaskList(); renderExec();
+  addLog(`📥 インポート完了: ${imported}件, スキップ${skipped}件`);
+  showToast(`${imported}件をインポートしました`);
+}
+
+function handleFile(file) {
+  if (!file || !file.name.endsWith('.json')) { alert('.jsonファイルを選択してください。'); return; }
+  const reader = new FileReader();
+  reader.onload = e => importJson(e.target.result);
+  reader.readAsText(file, 'utf-8');
+}
+
+const fileInput = document.getElementById('fileInput');
+const importZone = document.getElementById('importZone');
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); fileInput.value = ''; });
+importZone.addEventListener('click', () => fileInput.click());
+document.getElementById('importBtnHeader').addEventListener('click', () => fileInput.click());
+importZone.addEventListener('dragover', e => { e.preventDefault(); importZone.classList.add('drag-over'); });
+importZone.addEventListener('dragleave', () => importZone.classList.remove('drag-over'));
+importZone.addEventListener('drop', e => {
+  e.preventDefault(); importZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+// ===================== EXECUTE TAB =====================
+function setExecDate() {
+  const d = new Date();
+  const days = ['日','月','火','水','木','金','土'];
+  document.getElementById('execDate').textContent =
+    `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+}
+
+// --- LIST VIEW ---
+function renderExecList() {
+  const wrap = document.getElementById('execContainer');
+  if (!tasks.length) {
+    wrap.innerHTML = '<div class="empty-state" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);">タスクがありません<br><small>「タスク管理」タブからタスクを追加してください</small></div>';
+    return;
+  }
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.style.overflow = 'hidden';
+  const list = document.createElement('div');
+  list.className = 'exec-list';
+  list.id = 'execList';
+
+  tasks.forEach((t, i) => {
+    const color = t.color || getSolColor(t.solution);
+    const hasUrl = t.url && t.url.trim();
+    const isDone = !!checkedIds[t.id];
+    const item = document.createElement('div');
+    item.className = 'exec-list-item' + (isDone ? ' done' : '');
+    item.dataset.idx = i;
+    item.dataset.id = t.id;
+    item.draggable = true;
+
+    // checkbox
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'exec-checkbox';
+    cb.checked = isDone;
+    cb.title = isDone ? '完了を取り消す' : '完了にする';
+    cb.addEventListener('change', (e) => {
+      e.stopPropagation();
+      toggleChecked(t.id);
+      item.classList.toggle('done', cb.checked);
+    });
+
+    item.innerHTML = `<span class="drag-handle" title="ドラッグして並び替え">⠿</span>`;
+    item.appendChild(cb);
+
+    const pill = t.solution
+      ? Object.assign(document.createElement('span'), { className: 'exec-sol-pill', textContent: t.solution, style: `background:${color};` })
+      : null;
+    if (pill) item.appendChild(pill);
+
+    const nameSpan = Object.assign(document.createElement('span'), { className: 'exec-task-name', textContent: t.name });
+    item.appendChild(nameSpan);
+
+    if (hasUrl) {
+      const linkBtn = document.createElement('a');
+      linkBtn.href = t.url;
+      linkBtn.target = '_blank';
+      linkBtn.rel = 'noopener';
+      linkBtn.className = 'exec-link-btn';
+      linkBtn.textContent = '🔗 開く';
+      linkBtn.addEventListener('click', e => e.stopPropagation());
+      item.appendChild(linkBtn);
+
+      item.style.cursor = 'pointer';
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.exec-link-btn') || e.target.closest('.drag-handle') || e.target.closest('.exec-checkbox')) return;
+        if (!isDone) window.open(t.url, '_blank', 'noopener');
+      });
+    } else {
+      const dash = Object.assign(document.createElement('span'), { className: 'exec-no-url', textContent: '—' });
+      item.appendChild(dash);
+    }
+
+    setupListDrag(item, list);
+    list.appendChild(item);
+  });
+
+  card.appendChild(list);
+  wrap.innerHTML = '';
+  wrap.appendChild(card);
+}
+
+function setupListDrag(item, list) {
+  item.addEventListener('dragstart', e => {
+    dragSrcIdx = parseInt(item.dataset.idx);
+    item.classList.add('dragging-ghost');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  item.addEventListener('dragend', () => {
+    item.classList.remove('dragging-ghost');
+    list.querySelectorAll('.exec-list-item').forEach(el => {
+      el.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+  });
+  item.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const rect = item.getBoundingClientRect();
+    const mid = rect.top + rect.height / 2;
+    list.querySelectorAll('.exec-list-item').forEach(el => el.classList.remove('drag-over-top','drag-over-bottom'));
+    if (e.clientY < mid) item.classList.add('drag-over-top');
+    else item.classList.add('drag-over-bottom');
+  });
+  item.addEventListener('dragleave', () => {
+    item.classList.remove('drag-over-top', 'drag-over-bottom');
+  });
+  item.addEventListener('drop', e => {
+    e.preventDefault();
+    const targetIdx = parseInt(item.dataset.idx);
+    if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
+    const rect = item.getBoundingClientRect();
+    const mid = rect.top + rect.height / 2;
+    const insertAfter = e.clientY >= mid;
+    const moved = tasks.splice(dragSrcIdx, 1)[0];
+    let insertAt = targetIdx;
+    if (dragSrcIdx < targetIdx) insertAt = insertAfter ? targetIdx : targetIdx - 1;
+    else insertAt = insertAfter ? targetIdx + 1 : targetIdx;
+    tasks.splice(Math.max(0, insertAt), 0, moved);
+    dragSrcIdx = null;
+    saveTasks();
+    renderExec();
+  });
+}
+
+// --- CARD VIEW ---
+function renderExecCards() {
+  const wrap = document.getElementById('execContainer');
+  if (!tasks.length) {
+    wrap.innerHTML = '<div class="empty-state" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);">タスクがありません<br><small>「タスク管理」タブからタスクを追加してください</small></div>';
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'exec-cards';
+  grid.id = 'execCards';
+
+  tasks.forEach((t, i) => {
+    const color = t.color || getSolColor(t.solution);
+    const hasUrl = t.url && t.url.trim();
+    const isDone = !!checkedIds[t.id];
+    const card = document.createElement('div');
+    card.className = 'exec-card' + (isDone ? ' done' : '');
+    card.dataset.idx = i;
+    card.dataset.id = t.id;
+    card.draggable = true;
+    card.style.borderTop = `3px solid ${color}`;
+
+    // checkbox (top-right)
+    const cbWrap = document.createElement('div');
+    cbWrap.className = 'card-check-wrap';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'exec-checkbox';
+    cb.checked = isDone;
+    cb.title = isDone ? '完了を取り消す' : '完了にする';
+    cb.addEventListener('change', (e) => {
+      e.stopPropagation();
+      toggleChecked(t.id);
+      card.classList.toggle('done', cb.checked);
+    });
+    cbWrap.appendChild(cb);
+    card.appendChild(cbWrap);
+
+    if (t.solution) {
+      const pill = Object.assign(document.createElement('span'), { className: 'exec-card-pill', textContent: t.solution });
+      pill.style.background = color;
+      card.appendChild(pill);
+    }
+
+    const nameSpan = Object.assign(document.createElement('span'), { className: 'exec-card-name', textContent: t.name });
+    card.appendChild(nameSpan);
+
+    const footer = document.createElement('div');
+    footer.className = 'exec-card-footer';
+    if (hasUrl) {
+      const link = document.createElement('a');
+      link.href = t.url;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.className = 'exec-card-link';
+      link.textContent = '🔗 開く';
+      link.addEventListener('click', e => e.stopPropagation());
+      footer.appendChild(link);
+    } else {
+      footer.appendChild(document.createElement('span'));
+    }
+    const dragIcon = Object.assign(document.createElement('span'), { className: 'exec-card-drag', title: 'ドラッグして並び替え', textContent: '⠿' });
+    footer.appendChild(dragIcon);
+    card.appendChild(footer);
+
+    if (hasUrl) {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.exec-card-link') || e.target.closest('.exec-card-drag') || e.target.closest('.exec-checkbox')) return;
+        if (!isDone) window.open(t.url, '_blank', 'noopener');
+      });
+    }
+
+    setupCardDrag(card, grid);
+    grid.appendChild(card);
+  });
+
+  wrap.innerHTML = '';
+  wrap.appendChild(grid);
+}
+
+function setupCardDrag(card, grid) {
+  card.addEventListener('dragstart', e => {
+    dragSrcIdx = parseInt(card.dataset.idx);
+    card.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  card.addEventListener('dragend', () => {
+    card.classList.remove('dragging');
+    grid.querySelectorAll('.exec-card').forEach(c => c.classList.remove('drag-over-card'));
+  });
+  card.addEventListener('dragover', e => {
+    e.preventDefault();
+    grid.querySelectorAll('.exec-card').forEach(c => c.classList.remove('drag-over-card'));
+    card.classList.add('drag-over-card');
+  });
+  card.addEventListener('dragleave', () => card.classList.remove('drag-over-card'));
+  card.addEventListener('drop', e => {
+    e.preventDefault();
+    const targetIdx = parseInt(card.dataset.idx);
+    if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
+    const moved = tasks.splice(dragSrcIdx, 1)[0];
+    tasks.splice(targetIdx, 0, moved);
+    dragSrcIdx = null;
+    saveTasks();
+    renderExec();
+  });
+}
+
+function renderExec() {
+  if (execViewMode === 'list') renderExecList();
+  else renderExecCards();
+  updateProgress();
+  updateClearBtn();
+}
+
+// ===================== VIEW TOGGLE =====================
+document.getElementById('viewListBtn').addEventListener('click', () => {
+  execViewMode = 'list';
+  document.getElementById('viewListBtn').classList.add('active');
+  document.getElementById('viewCardBtn').classList.remove('active');
+  renderExec();
+});
+document.getElementById('viewCardBtn').addEventListener('click', () => {
+  execViewMode = 'card';
+  document.getElementById('viewCardBtn').classList.add('active');
+  document.getElementById('viewListBtn').classList.remove('active');
+  renderExec();
+});
+
+// ===================== TABS =====================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ===================== CLEAR CHECKED =====================
+document.getElementById('clearCheckedBtn').addEventListener('click', () => {
+  clearAllChecked();
+  showToast('チェックをクリアしました');
+});
+
+// ===================== INIT =====================
+setExecDate();
+refreshTaskSelect();
+renderSolColorPanel();
+renderTaskList();
+renderExec();
+</script>
+</body>
+</html>
