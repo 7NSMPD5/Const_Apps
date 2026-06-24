@@ -3,464 +3,624 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>タスク管理</title>
+<title>朝のルーティンタスク管理</title>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --surface-2: #f1f2f4;
+    --line: #dadde2;
+    --line-strong: #c7ccd3;
+    --text: #2f343b;
+    --muted: #7b838d;
+    --accent: #7b8796;
+    --accent-2: #98a3af;
+    --ok: #8da17d;
+    --danger: #b67b7b;
+    --offday: #edf0f3;
+    --shadow: 0 10px 28px rgba(35, 42, 50, 0.06);
+    --radius: 14px;
+    --radius-sm: 9px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: light; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+    background: linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(150,155,165,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(150,155,165,.05) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  button, input, select { font: inherit; }
+  a { color: inherit; }
+  header, .tab-wrap, .main, .toast, .celebration-overlay { position: relative; z-index: 1; }
 
-:root {
-  --bg: #f5f4f1;
-  --surface: #ffffff;
-  --surface2: #f0efe9;
-  --border: #dddbd3;
-  --border2: #c8c6bc;
-  --text: #1a1a18;
-  --text2: #6b6960;
-  --text3: #9c9a91;
-  --accent: #2d6a4f;
-  --accent-light: #e8f3ee;
-  --accent-text: #1b4332;
-  --danger: #b5362a;
-  --danger-light: #fdf0ee;
-  --radius: 8px;
-  --radius-lg: 12px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.08);
-}
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    backdrop-filter: blur(10px);
+    background: rgba(255,255,255,.9);
+    border-bottom: 1px solid var(--line);
+  }
+  .header-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    background: #fff;
+    font-size: 18px;
+    animation: pulse 3.2s ease-in-out infinite;
+  }
+  .brand-title { color: var(--accent); font-weight: 800; font-size: 18px; letter-spacing: .12em; }
+  .brand-sub { font-size: 11px; color: var(--muted); letter-spacing: .06em; }
+  .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
-body {
-  font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.6;
-  min-height: 100vh;
-}
+  .btn {
+    appearance: none;
+    border: 1px solid var(--line-strong);
+    background: #fff;
+    color: var(--text);
+    border-radius: 999px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: .18s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); background: #fafbfc; }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #697584; border-color: #697584; color: #fff; }
+  .btn-danger:hover { border-color: var(--danger); color: var(--danger); background: #fff7f7; }
+  .btn-sm { padding: 7px 12px; font-size: 12px; }
 
-/* ===== HEADER ===== */
-header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 0 24px;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 20;
-}
-header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
-.header-actions { display: flex; gap: 8px; align-items: center; }
+  .tab-wrap { max-width: 1120px; margin: 16px auto 0; padding: 0 18px; }
+  .tab-bar { display: flex; }
+  .tab-btn {
+    flex: 1;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--muted);
+    padding: 12px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    cursor: pointer;
+    transition: .18s ease;
+  }
+  .tab-btn:first-child { border-radius: 14px 0 0 0; }
+  .tab-btn:last-child { border-radius: 0 14px 0 0; }
+  .tab-btn.active { background: #fff; color: var(--accent); border-bottom-color: #fff; }
+  .tab-btn:hover { color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
 
-/* ===== TABS ===== */
-.tab-bar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  padding: 0 24px;
-  gap: 0;
-}
-.tab-btn {
-  padding: 12px 20px;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text3);
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-  white-space: nowrap;
-}
-.tab-btn:hover { color: var(--text2); }
-.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .main { max-width: 1120px; margin: 0 auto; padding: 18px; }
+  .grid-2 { display: grid; grid-template-columns: 360px 1fr; gap: 16px; align-items: start; }
+  .stack { display: flex; flex-direction: column; gap: 16px; }
 
-/* ===== TAB PANELS ===== */
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    animation: fadeUp .35s ease both;
+  }
+  .card-header {
+    padding: 16px 18px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    width: 100%;
+  }
+  .card-title::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .card-body { padding: 16px 18px 18px; }
 
-/* ===== LAYOUT ===== */
-.main {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px 20px;
-}
-.grid-2 {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 20px;
-  align-items: start;
-}
+  .form-group { margin-bottom: 12px; }
+  label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--muted); font-weight: 700; }
+  .required { color: var(--danger); }
+  input[type="text"], input[type="url"], select {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: var(--text);
+    padding: 10px 12px;
+    outline: none;
+    transition: .18s ease;
+  }
+  input::placeholder { color: #afb5bc; }
+  input[type="text"]:focus, input[type="url"]:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(123,135,150,.12);
+  }
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%2398a3af' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 34px;
+  }
+  .color-row { display: flex; gap: 8px; align-items: center; }
+  .color-row input[type="text"] { flex: 1; }
+  input[type="color"] {
+    width: 40px;
+    height: 40px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+  }
+  .weekday-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .weekday-chip {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 999px;
+    padding: 7px 0;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    font-weight: 700;
+    transition: .16s ease;
+  }
+  .weekday-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .weekday-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .weekday-note { margin-top: 6px; font-size: 11px; color: var(--muted); }
+  .form-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .form-actions .btn-primary { flex: 1; }
 
-/* ===== CARDS ===== */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-}
-.card-header {
-  padding: 14px 16px 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.card-title {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text3);
-}
-.card-body { padding: 14px 16px 16px; }
+  .import-zone {
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-sm);
+    padding: 24px 12px;
+    text-align: center;
+    background: #fafbf9;
+    cursor: pointer;
+    transition: .16s ease;
+  }
+  .import-zone:hover, .import-zone.drag-over { border-color: var(--accent); background: #f5f7f8; }
+  .import-zone strong { display: block; color: var(--accent); font-size: 13px; }
+  .import-zone p { margin-top: 6px; font-size: 12px; color: var(--muted); }
 
-/* ===== FORM ===== */
-label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 4px; }
-.form-group { margin-bottom: 12px; }
-input[type="text"], input[type="url"], select, textarea {
-  width: 100%;
-  padding: 7px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 13px;
-  font-family: inherit;
-  color: var(--text);
-  background: var(--surface);
-  outline: none;
-  transition: border-color 0.15s;
-  appearance: none;
-}
-input[type="text"]:focus, input[type="url"]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,106,79,0.12); }
-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239c9a91' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  padding-right: 28px;
-  cursor: pointer;
-}
-.color-row { display: flex; gap: 8px; align-items: center; }
-.color-row input[type="text"] { flex: 1; }
-input[type="color"] {
-  width: 34px; height: 34px; padding: 2px;
-  border: 1px solid var(--border); border-radius: var(--radius);
-  cursor: pointer; background: none; flex-shrink: 0;
-}
-.required { color: var(--danger); }
+  .sol-color-table { width: 100%; border-collapse: collapse; }
+  .sol-color-table td { padding: 8px 4px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .sol-color-preview { width: 18px; height: 18px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.08); vertical-align: middle; margin-right: 8px; }
+  .sol-name-cell { font-weight: 700; }
+  .sol-count { color: var(--muted); font-size: 12px; }
 
-/* ===== BUTTONS ===== */
-.btn {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 7px 14px; border-radius: var(--radius);
-  font-size: 13px; font-family: inherit; font-weight: 500;
-  cursor: pointer; border: 1px solid var(--border2);
-  background: var(--surface); color: var(--text);
-  transition: background 0.12s; text-decoration: none; white-space: nowrap;
-}
-.btn:hover { background: var(--surface2); }
-.btn:active { transform: scale(0.98); }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn-primary:hover { background: #245c43; border-color: #245c43; }
-.btn-danger { color: var(--danger); border-color: #e8b4ae; }
-.btn-danger:hover { background: var(--danger-light); }
-.btn-sm { padding: 5px 10px; font-size: 12px; }
-.form-actions { display: flex; gap: 8px; margin-top: 4px; }
-.form-actions .btn-primary { flex: 1; justify-content: center; }
+  .mgr-task-list { display: flex; flex-direction: column; }
+  .mgr-task-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    transition: .15s ease;
+    min-width: 0;
+  }
+  .mgr-task-item:last-child { border-bottom: none; }
+  .mgr-task-item:hover { background: #fafafa; }
+  .mgr-task-item.selected { background: #f6f6f4; box-shadow: inset 3px 0 0 var(--accent); }
+  .task-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0,0,0,.08); }
+  .task-name-cell { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 700; }
+  .task-sol-badge {
+    font-size: 11px; white-space: nowrap; padding: 3px 8px; border-radius: 999px;
+    background: #f4f5f6; color: var(--accent); border: 1px solid rgba(123,135,150,.18);
+  }
+  .task-days-badge {
+    font-size: 11px; white-space: nowrap; padding: 3px 8px; border-radius: 999px;
+    background: #f7f7f7; color: var(--muted); border: 1px solid var(--line);
+  }
+  .task-url-icon { color: var(--accent); }
 
-/* ===== MANAGE TAB: task list ===== */
-.mgr-task-list { display: flex; flex-direction: column; }
-.mgr-task-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px 16px; border-bottom: 1px solid var(--border);
-  cursor: pointer; transition: background 0.1s; min-width: 0;
-}
-.mgr-task-item:last-child { border-bottom: none; }
-.mgr-task-item:hover { background: var(--surface2); }
-.mgr-task-item.selected { background: var(--accent-light); }
-.task-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.1); }
-.task-name-cell { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.task-sol-badge {
-  font-size: 11px; padding: 1px 7px; border-radius: 20px;
-  flex-shrink: 0; white-space: nowrap;
-  background: var(--surface2); color: var(--text2);
-}
-.task-url-icon { font-size: 13px; color: var(--accent); flex-shrink: 0; }
+  .log-panel {
+    border-top: 1px solid var(--line);
+    background: #fafaf9;
+    padding: 12px 16px;
+    max-height: 130px;
+    overflow-y: auto;
+  }
+  .log-label { font-size: 11px; color: var(--muted); font-weight: 800; letter-spacing: .08em; margin-bottom: 6px; }
+  .log-entry { display: flex; gap: 8px; font-size: 12px; color: var(--text); padding: 2px 0; }
+  .log-time { color: var(--muted); flex-shrink: 0; }
 
-/* ===== LOG ===== */
-.log-panel {
-  background: var(--surface2);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  padding: 10px 16px; border-top: 1px solid var(--border);
-  max-height: 110px; overflow-y: auto;
-}
-.log-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); margin-bottom: 6px; }
-.log-entry { font-size: 11px; color: var(--text2); padding: 1px 0; display: flex; gap: 6px; }
-.log-time { color: var(--text3); flex-shrink: 0; }
+  .exec-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .exec-date { color: var(--muted); font-size: 13px; font-weight: 700; }
+  .toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .view-toggle { display: flex; gap: 6px; }
+  .view-btn {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: .16s ease;
+  }
+  .view-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .view-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-/* ===== IMPORT ZONE ===== */
-.import-zone {
-  border: 2px dashed var(--border2); border-radius: var(--radius);
-  padding: 20px; text-align: center; cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-}
-.import-zone:hover, .import-zone.drag-over { border-color: var(--accent); background: var(--accent-light); }
-.import-zone p { font-size: 12px; color: var(--text3); margin-top: 6px; }
-.import-zone strong { color: var(--text2); font-size: 13px; }
+  .stats-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
 
-/* ===== EXECUTE TAB TOOLBAR ===== */
-.exec-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
-}
-.exec-date { font-size: 13px; color: var(--text2); }
-.view-toggle { display: flex; gap: 4px; }
-.view-btn {
-  padding: 6px 10px; border-radius: var(--radius);
-  font-size: 13px; font-family: inherit; font-weight: 500;
-  cursor: pointer; border: 1px solid var(--border2);
-  background: var(--surface); color: var(--text2); transition: all 0.12s;
-}
-.view-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .exec-progress-wrap {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+    transition: .2s ease;
+  }
+  .exec-progress-bar-bg { flex: 1; min-width: 200px; height: 10px; background: #ececeb; overflow: hidden; border-radius: 999px; }
+  .exec-progress-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 999px; transition: width .28s ease, background .28s ease; }
+  .exec-progress-label {
+    font-size: 12px;
+    font-weight: 800;
+    color: #fff;
+    background: var(--muted);
+    border-radius: 999px;
+    padding: 6px 14px;
+    white-space: nowrap;
+  }
 
-/* ===== EXECUTE: LIST VIEW ===== */
-.exec-list { display: flex; flex-direction: column; gap: 0; }
-.exec-list-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 11px 16px; border-bottom: 1px solid var(--border);
-  background: var(--surface); transition: background 0.1s;
-  cursor: grab; user-select: none;
-}
-.exec-list-item:last-child { border-bottom: none; }
-.exec-list-item:hover { background: var(--surface2); }
-.exec-list-item.has-url { cursor: grab; }
-.exec-list-item.drag-over-top { border-top: 2px solid var(--accent); }
-.exec-list-item.drag-over-bottom { border-bottom: 2px solid var(--accent); }
-.drag-handle { font-size: 16px; color: var(--text3); cursor: grab; flex-shrink: 0; line-height: 1; }
-.exec-sol-pill {
-  font-size: 11px; font-weight: 600; padding: 2px 9px;
-  border-radius: 20px; flex-shrink: 0; white-space: nowrap;
-  color: #fff;
-}
-.exec-task-name {
-  flex: 1; font-size: 13px; font-weight: 500;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.exec-link-btn {
-  font-size: 12px; padding: 4px 10px;
-  border: 1px solid var(--border2); border-radius: var(--radius);
-  background: var(--surface); color: var(--accent);
-  cursor: pointer; font-family: inherit; font-weight: 500;
-  transition: background 0.12s; flex-shrink: 0; white-space: nowrap;
-  text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
-}
-.exec-link-btn:hover { background: var(--accent-light); }
-.exec-no-url { font-size: 11px; color: var(--text3); flex-shrink: 0; }
+  .exec-list { display: flex; flex-direction: column; }
+  .exec-list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+    cursor: grab;
+    user-select: none;
+    transition: .16s ease;
+    min-width: 0;
+  }
+  .exec-list-item:last-child { border-bottom: none; }
+  .exec-list-item:hover { background: #fafafa; }
+  .exec-list-item.drag-over-top { border-top: 2px solid var(--accent); }
+  .exec-list-item.drag-over-bottom { border-bottom: 2px solid var(--accent); }
+  .exec-list-item.offday {
+    background: var(--offday) !important;
+    color: var(--muted);
+    opacity: .9;
+  }
+  .exec-list-item.offday .exec-task-name { color: var(--muted); }
+  .exec-list-item.done, .exec-card.done {
+    background: #f2f3f1 !important;
+    opacity: .72;
+  }
+  .exec-list-item.done .exec-task-name, .exec-card.done .exec-card-name { color: #9ba2ab; text-decoration: line-through; }
+  .drag-handle, .exec-card-drag { color: #a7adb6; font-size: 17px; flex-shrink: 0; }
+  .exec-sol-pill, .exec-card-pill {
+    font-size: 11px;
+    font-weight: 800;
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .exec-task-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+  .exec-link-btn, .exec-card-link {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--accent);
+    text-decoration: none;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    transition: .16s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .exec-link-btn:hover, .exec-card-link:hover { border-color: var(--accent); background: #f8f9fa; }
+  .exec-no-url { color: var(--muted); font-size: 12px; }
+  .exec-schedule-tag {
+    font-size: 11px;
+    color: var(--muted);
+    background: #f7f7f7;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    white-space: nowrap;
+  }
 
-/* ===== EXECUTE: CARD VIEW ===== */
-.exec-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-}
-.exec-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  padding: 14px;
-  cursor: grab;
-  user-select: none;
-  transition: box-shadow 0.15s, transform 0.15s;
-  display: flex; flex-direction: column; gap: 8px;
-  position: relative;
-  min-height: 90px;
-}
-.exec-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.12); transform: translateY(-1px); }
-.exec-card.dragging { opacity: 0.4; }
-.exec-card.drag-over-card { outline: 2px solid var(--accent); outline-offset: 2px; }
-.exec-card-pill {
-  font-size: 10px; font-weight: 700; padding: 2px 8px;
-  border-radius: 20px; color: #fff;
-  align-self: flex-start; white-space: nowrap; letter-spacing: 0.03em;
-}
-.exec-card-name {
-  font-size: 13px; font-weight: 500; color: var(--text);
-  line-height: 1.4; flex: 1;
-}
-.exec-card-footer { display: flex; align-items: center; justify-content: space-between; }
-.exec-card-link {
-  font-size: 11px; color: var(--accent); text-decoration: none;
-  display: inline-flex; align-items: center; gap: 3px;
-  border: 1px solid var(--border2); border-radius: var(--radius);
-  padding: 3px 8px; background: var(--surface); font-weight: 500;
-  transition: background 0.12s;
-}
-.exec-card-link:hover { background: var(--accent-light); }
-.exec-card-drag { font-size: 14px; color: var(--text3); cursor: grab; }
+  .exec-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    border: 2px solid var(--line-strong);
+    background: #fff;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: .16s ease;
+  }
+  .exec-checkbox:hover { border-color: var(--accent); }
+  .exec-checkbox:checked { background: var(--accent); border-color: var(--accent); }
+  .exec-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 0px;
+    width: 5px;
+    height: 10px;
+    border: 2px solid #fff;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg);
+  }
+  .exec-checkbox:disabled {
+    background: #f1f2f4;
+    border-color: var(--line);
+    cursor: not-allowed;
+  }
 
-/* ===== DRAG GHOST ===== */
-.dragging-ghost {
-  opacity: 0.35;
-}
+  .exec-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .exec-card {
+    position: relative;
+    min-height: 114px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    cursor: grab;
+    transition: .16s ease;
+  }
+  .exec-card:hover { transform: translateY(-2px); }
+  .exec-card.dragging { opacity: .45; }
+  .exec-card.drag-over-card { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .exec-card.offday {
+    background: var(--offday) !important;
+    opacity: .9;
+  }
+  .exec-card.offday .exec-card-name { color: var(--muted); }
+  .card-check-wrap { position: absolute; top: 10px; right: 10px; }
+  .exec-card-name { flex: 1; font-size: 13px; font-weight: 700; line-height: 1.5; min-height: 40px; }
+  .exec-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
-/* ===== CHECKBOX ===== */
-.exec-checkbox {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 17px;
-  height: 17px;
-  border: 2px solid var(--border2);
-  border-radius: 4px;
-  background: var(--surface);
-  cursor: pointer;
-  flex-shrink: 0;
-  position: relative;
-  transition: background 0.15s, border-color 0.15s;
-  display: inline-block;
-  vertical-align: middle;
-}
-.exec-checkbox:hover { border-color: var(--accent); }
-.exec-checkbox:checked {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-.exec-checkbox:checked::after {
-  content: '';
-  position: absolute;
-  left: 3px; top: 0px;
-  width: 5px; height: 9px;
-  border: 2px solid #fff;
-  border-top: none; border-left: none;
-  transform: rotate(45deg);
-}
+  .empty-state { padding: 40px 16px; text-align: center; color: var(--muted); font-size: 13px; }
 
-/* ===== DONE STATE ===== */
-.exec-list-item.done {
-  background: #f5f5f3 !important;
-  opacity: 0.55;
-}
-.exec-list-item.done .exec-task-name {
-  text-decoration: line-through;
-  color: var(--text3);
-}
-.exec-list-item.done .exec-sol-pill { opacity: 0.5; }
-.exec-list-item.done .exec-link-btn { opacity: 0.4; pointer-events: none; }
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%) translateY(0);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 14px 30px rgba(0,0,0,.12);
+    opacity: 0;
+    pointer-events: none;
+    transition: .2s ease;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
 
-.exec-card.done {
-  background: #f5f5f3 !important;
-  opacity: 0.5;
-}
-.exec-card.done .exec-card-name {
-  text-decoration: line-through;
-  color: var(--text3);
-}
-.exec-card.done .exec-card-pill { opacity: 0.5; }
-.exec-card.done .exec-card-link { opacity: 0.4; pointer-events: none; }
+  /* Celebration message only */
+  .celebration-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 120;
+    background: radial-gradient(circle at center, rgba(255,255,255,0), rgba(255,255,255,.34) 42%, rgba(247,247,245,.9) 75%);
+    backdrop-filter: blur(2px);
+  }
+  .celebration-overlay.show { display: flex; }
+  .celebration-scene {
+    position: relative;
+    width: min(96vw, 1200px);
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .celebration-msg {
+    opacity: 0;
+    transform: translateY(18px) scale(.95);
+    background: rgba(255,255,255,.97);
+    border: 1px solid rgba(123,135,150,.18);
+    border-radius: 999px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.10);
+    padding: 22px 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    white-space: nowrap;
+  }
+  .celebration-overlay.show .celebration-msg { animation: msgPop .7s ease .05s forwards; }
+  .celebration-complete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #8893a1, #697584);
+    color: #fff;
+    font-size: clamp(18px, 2.2vw, 28px);
+    font-weight: 900;
+    letter-spacing: .10em;
+    flex-shrink: 0;
+  }
+  .celebration-text {
+    font-size: clamp(28px, 3.2vw, 46px);
+    font-weight: 900;
+    color: #5b6470;
+    line-height: 1.1;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .celebration-close {
+    margin-left: 10px;
+    border: 1px solid var(--line-strong);
+    background: #fff;
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .celebration-close:hover { background: #f7f7f7; }
 
-/* card checkbox badge (top-right) */
-.card-check-wrap {
-  position: absolute;
-  top: 8px; right: 8px;
-}
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(123,135,150,.18); }
+    50% { box-shadow: 0 0 0 9px rgba(123,135,150,0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes msgPop {
+    from { opacity: 0; transform: translateY(18px) scale(.95); filter: blur(8px); }
+    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  }
 
-/* progress bar */
-.exec-progress-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.exec-progress-bar-bg {
-  flex: 1;
-  height: 6px;
-  background: var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.exec-progress-bar-fill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 10px;
-  transition: width 0.3s ease;
-}
-.exec-progress-label {
-  font-size: 12px;
-  color: var(--text2);
-  white-space: nowrap;
-  min-width: 70px;
-  text-align: right;
-}
-
-/* ===== EMPTY ===== */
-.empty-state { padding: 32px 16px; text-align: center; color: var(--text3); font-size: 13px; }
-
-/* ===== TOAST ===== */
-.toast {
-  position: fixed; bottom: 24px; left: 50%;
-  transform: translateX(-50%) translateY(0);
-  background: var(--text); color: #fff;
-  padding: 8px 16px; border-radius: 20px;
-  font-size: 13px; font-weight: 500;
-  z-index: 100; opacity: 0; pointer-events: none;
-  transition: opacity 0.2s, transform 0.2s;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
-
-/* ===== SOLUTION COLOR TABLE ===== */
-.sol-color-table { width: 100%; font-size: 12px; border-collapse: collapse; }
-.sol-color-table td { padding: 5px 6px; vertical-align: middle; }
-.sol-color-table tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
-.sol-name-cell { font-weight: 500; color: var(--text2); }
-.sol-color-preview { width: 18px; height: 18px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,0.1); vertical-align: middle; margin-right: 6px; }
-.sol-count { color: var(--text3); font-size: 11px; }
-
-@media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+  @media (max-width: 920px) { .grid-2 { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) {
+    .celebration-msg { gap: 12px; padding: 18px 20px; }
+    .celebration-complete { font-size: clamp(15px, 2vw, 22px); padding: 8px 14px; }
+    .celebration-text { font-size: clamp(20px, 4vw, 30px); }
+    .celebration-close { padding: 7px 12px; }
+  }
+  @media (max-width: 560px) {
+    .header-actions { width: 100%; }
+    .header-actions .btn { flex: 1; }
+    .weekday-grid { grid-template-columns: repeat(4, 1fr); }
+    .exec-cards { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
-
 <header>
-  <h1>📋 タスク管理アプリ</h1>
-  <div class="header-actions">
-    <button class="btn btn-sm" id="exportBtn">📤 エクスポート</button>
-    <button class="btn btn-sm btn-primary" id="importBtnHeader">📥 インポート</button>
-    <input type="file" id="fileInput" accept=".json" style="display:none">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-icon">☀</div>
+      <div>
+        <div class="brand-title">MORNING ROUTINE</div>
+        <div class="brand-sub">朝の流れを、静かに整えるタスクマネージャー</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-sm" id="exportBtn">エクスポート</button>
+      <button class="btn btn-sm btn-primary" id="importBtnHeader">インポート</button>
+      <input type="file" id="fileInput" accept=".json" hidden>
+    </div>
   </div>
 </header>
 
-<div class="tab-bar">
-  <button class="tab-btn active" data-tab="exec">📅 本日のタスク！</button>
-  <button class="tab-btn" data-tab="manage">⚙️ タスク管理</button>
+<div class="tab-wrap">
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="exec">本日のルーティン</button>
+    <button class="tab-btn" data-tab="manage">タスク管理</button>
+  </div>
 </div>
 
-<!-- ===================== EXECUTE TAB ===================== -->
 <div class="tab-panel active" id="tab-exec">
   <div class="main">
     <div class="exec-toolbar">
       <span class="exec-date" id="execDate"></span>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button class="btn btn-sm" id="clearCheckedBtn" style="display:none;">✅ チェックをクリア</button>
+      <div class="toolbar-right">
+        <button class="btn btn-sm" id="clearCheckedBtn" style="display:none;">完了チェックをクリア</button>
         <div class="view-toggle">
-          <button class="view-btn active" id="viewListBtn">☰ リスト</button>
-          <button class="view-btn" id="viewCardBtn">⊞ カード</button>
+          <button class="view-btn active" id="viewListBtn">リスト</button>
+          <button class="view-btn" id="viewCardBtn">カード</button>
         </div>
       </div>
     </div>
-    <div class="exec-progress-wrap" id="execProgressWrap" style="display:none;">
-      <div class="exec-progress-bar-bg"><div class="exec-progress-bar-fill" id="execProgressFill" style="width:0%"></div></div>
+    <p class="stats-note" id="todayStatsNote"></p>
+    <div class="exec-progress-wrap" id="execProgressWrap">
+      <div class="exec-progress-bar-bg"><div class="exec-progress-bar-fill" id="execProgressFill"></div></div>
       <span class="exec-progress-label" id="execProgressLabel"></span>
     </div>
     <div id="execContainer"></div>
   </div>
 </div>
 
-<!-- ===================== MANAGE TAB ===================== -->
 <div class="tab-panel" id="tab-manage">
   <div class="main">
     <div class="grid-2">
-
-      <!-- 左: 編集フォーム -->
-      <div style="display:flex;flex-direction:column;gap:16px;">
-
+      <div class="stack">
         <div class="card">
           <div class="card-header"><span class="card-title">タスク編集</span></div>
           <div class="card-body">
@@ -470,35 +630,38 @@ input[type="color"] {
             </div>
             <div class="form-group">
               <label for="taskNameInput">タスク名 <span class="required">*</span></label>
-              <input type="text" id="taskNameInput" placeholder="タスク名を入力">
+              <input type="text" id="taskNameInput" placeholder="例：白湯を飲む">
             </div>
             <div class="form-group">
               <label for="taskUrlInput">URL</label>
               <input type="url" id="taskUrlInput" placeholder="https://...">
             </div>
             <div class="form-group">
-              <label for="solutionNameInput">ソリューション名</label>
+              <label for="solutionNameInput">カテゴリ名</label>
               <div class="color-row">
-                <input type="text" id="solutionNameInput" placeholder="例: Chrome / Box / Direct">
-                <input type="color" id="solutionColorInput" value="#2d6a4f" title="カラーを選択">
+                <input type="text" id="solutionNameInput" placeholder="例：健康 / 家事 / 連絡">
+                <input type="color" id="solutionColorInput" value="#7b8796" title="カラーを選択">
               </div>
             </div>
+            <div class="form-group">
+              <label>曜日設定</label>
+              <div class="weekday-grid" id="weekdayGrid"></div>
+              <div class="weekday-note">チェックした曜日だけ、本日のルーティンで通常表示されます。未チェックの曜日は「対象外」としてグレーアウト表示します。</div>
+            </div>
             <div class="form-actions">
-              <button class="btn btn-primary" id="saveTaskBtn">💾 保存</button>
-              <button class="btn btn-danger" id="deleteTaskBtn" style="display:none">🗑 削除</button>
+              <button class="btn btn-primary" id="saveTaskBtn">保存</button>
+              <button class="btn btn-danger" id="deleteTaskBtn" style="display:none;">削除</button>
             </div>
           </div>
         </div>
 
-        <!-- ソリューションカラー管理 -->
         <div class="card">
-          <div class="card-header"><span class="card-title">ソリューション別カラー</span></div>
+          <div class="card-header"><span class="card-title">カテゴリ別カラー</span></div>
           <div class="card-body" id="solColorPanel">
-            <p style="font-size:12px;color:var(--text3);">タスクを追加するとここに表示されます</p>
+            <p style="font-size:12px;color:var(--muted);">タスクを追加するとここに表示されます。</p>
           </div>
         </div>
 
-        <!-- インポート -->
         <div class="card">
           <div class="card-header"><span class="card-title">JSONインポート</span></div>
           <div class="card-body">
@@ -508,24 +671,29 @@ input[type="color"] {
             </div>
           </div>
         </div>
-
       </div>
 
-      <!-- 右: タスク一覧 + ログ -->
-      <div class="card" style="overflow:hidden;">
-        <div class="card-header" style="padding:14px 16px 12px;">
-          <span class="card-title">タスク一覧 <span id="taskCount" style="font-weight:400;"></span></span>
-          <button class="btn btn-sm btn-danger" id="clearAllBtn" style="display:none">全削除</button>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">タスク一覧 <span id="taskCount"></span></span>
+          <button class="btn btn-sm btn-danger" id="clearAllBtn" style="display:none;">全削除</button>
         </div>
         <div id="taskListContainer" class="mgr-task-list"></div>
         <div class="log-panel">
           <div class="log-label">操作ログ</div>
-          <div id="logContainer">
-            <div class="log-entry"><span class="log-time">—</span><span>ログなし</span></div>
-          </div>
+          <div id="logContainer"><div class="log-entry"><span class="log-time">—</span><span>ログなし</span></div></div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
 
+<div class="celebration-overlay" id="celebrationOverlay" aria-hidden="true">
+  <div class="celebration-scene">
+    <div class="celebration-msg">
+      <span class="celebration-complete">COMPLETE</span>
+      <span class="celebration-text">朝のルーティンが完了しました！</span>
+      <button class="celebration-close" id="celebrationCloseBtn">閉じる</button>
     </div>
   </div>
 </div>
@@ -533,26 +701,28 @@ input[type="color"] {
 <div class="toast" id="toast"></div>
 
 <script>
-const STORAGE_KEY = 'task_manager_v2';
-const SOL_COLOR_KEY = 'task_sol_colors_v2';
-const CHECK_KEY = 'task_checks_v2';
+const STORAGE_KEY = 'task_manager_morning_v3';
+const SOL_COLOR_KEY = 'task_sol_colors_morning_v3';
+const CHECK_KEY = 'task_checks_morning_v3';
+const WEEKDAY_LABELS = ['日','月','火','水','木','金','土'];
+const ALL_WEEKDAYS = [0,1,2,3,4,5,6];
 
 let tasks = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 let solColors = JSON.parse(localStorage.getItem(SOL_COLOR_KEY) || '{}');
 let logs = [];
-let execViewMode = 'list'; // 'list' | 'card'
+let execViewMode = 'list';
 let dragSrcIdx = null;
+let celebrationShown = false;
+let celebrationHideTimer = null;
+let selectedWeekdays = [...ALL_WEEKDAYS];
 
-// ===================== CHECKED STATE =====================
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
 }
-
-function loadChecked() {
+function loadCheckedState() {
   try {
     const raw = JSON.parse(localStorage.getItem(CHECK_KEY) || '{}');
-    // 日付が今日でなければ自動クリア
     if (raw.date !== todayStr()) {
       localStorage.removeItem(CHECK_KEY);
       return {};
@@ -560,158 +730,101 @@ function loadChecked() {
     return raw.ids || {};
   } catch(e) { return {}; }
 }
-
-function saveChecked(checkedIds) {
-  localStorage.setItem(CHECK_KEY, JSON.stringify({ date: todayStr(), ids: checkedIds }));
+let checkedIds = loadCheckedState();
+function saveChecked(ids) {
+  localStorage.setItem(CHECK_KEY, JSON.stringify({ date: todayStr(), ids }));
 }
-
-let checkedIds = loadChecked(); // { taskId: true }
-
-function toggleChecked(id) {
-  if (checkedIds[id]) delete checkedIds[id];
-  else checkedIds[id] = true;
-  saveChecked(checkedIds);
-  updateProgress();
-  updateClearBtn();
-}
-
-function clearAllChecked() {
-  checkedIds = {};
-  saveChecked(checkedIds);
-  updateProgress();
-  updateClearBtn();
-  renderExec();
-}
-
-function updateProgress() {
-  const total = tasks.length;
-  const done = tasks.filter(t => checkedIds[t.id]).length;
-  const wrap = document.getElementById('execProgressWrap');
-  const fill = document.getElementById('execProgressFill');
-  const label = document.getElementById('execProgressLabel');
-  if (!total) { wrap.style.display = 'none'; return; }
-  wrap.style.display = 'flex';
-  const pct = Math.round(done / total * 100);
-  fill.style.width = pct + '%';
-  label.textContent = `${done} / ${total} 完了`;
-  // 全完了時に色を変える
-  fill.style.background = done === total ? '#27ae60' : 'var(--accent)';
-}
-
-function updateClearBtn() {
-  const btn = document.getElementById('clearCheckedBtn');
-  const hasDone = tasks.some(t => checkedIds[t.id]);
-  btn.style.display = hasDone ? 'inline-flex' : 'none';
-}
-
-// Default solution colors
-const DEFAULT_SOL_COLORS = {
-  'chrome': '#4285f4', 'direct': '#e74c3c', 'teams': '#6264a7',
-  'box': '#0061d5', 'company': '#e67e22', 'outlook': '#0072c6',
-  '組織カレンダー': '#34a853', 'sharepoint': '#036c70'
-};
-
-function getSolColor(sol) {
-  if (!sol) return '#9c9a91';
-  if (solColors[sol]) return solColors[sol];
-  const lc = sol.toLowerCase();
-  for (const [k, c] of Object.entries(DEFAULT_SOL_COLORS)) {
-    if (lc.includes(k) || k.includes(lc)) return c;
-  }
-  // Generate stable color from string hash
-  let hash = 0;
-  for (let i = 0; i < sol.length; i++) hash = sol.charCodeAt(i) + ((hash << 5) - hash);
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue},55%,42%)`;
-}
-
-function saveSolColors() {
-  localStorage.setItem(SOL_COLOR_KEY, JSON.stringify(solColors));
-}
-
-function generateId() {
-  return 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-}
-
-function saveTasks() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-}
-
+function saveTasks() { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); }
+function saveSolColors() { localStorage.setItem(SOL_COLOR_KEY, JSON.stringify(solColors)); }
+function generateId() { return 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function escHtml(s) {
-  if (!s) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
-
+function normalizeWeekdays(days) {
+  if (!Array.isArray(days) || days.length === 0) return [...ALL_WEEKDAYS];
+  return [...new Set(days.map(v => Number(v)).filter(v => v >= 0 && v <= 6))].sort((a,b) => a - b);
+}
+function getTodayIndex() { return new Date().getDay(); }
+function isTaskForToday(task) {
+  const days = normalizeWeekdays(task.weekdays);
+  return days.includes(getTodayIndex());
+}
+function getTodayTasks() { return tasks.filter(isTaskForToday); }
+function weekdaySummary(days) {
+  const normalized = normalizeWeekdays(days);
+  if (normalized.length === 7) return '毎日';
+  return normalized.map(d => WEEKDAY_LABELS[d]).join('・');
+}
 function showToast(msg, dur = 2200) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), dur);
 }
-
 function addLog(msg) {
-  const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  logs.unshift({time: now, msg});
+  const now = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  logs.unshift({ time: now, msg });
   if (logs.length > 30) logs.pop();
   renderLog();
 }
-
 function renderLog() {
   const el = document.getElementById('logContainer');
   if (!logs.length) {
     el.innerHTML = '<div class="log-entry"><span class="log-time">—</span><span>ログなし</span></div>';
     return;
   }
-  el.innerHTML = logs.map(l =>
-    `<div class="log-entry"><span class="log-time">${escHtml(l.time)}</span><span>${escHtml(l.msg)}</span></div>`
-  ).join('');
+  el.innerHTML = logs.map(l => `<div class="log-entry"><span class="log-time">${escHtml(l.time)}</span><span>${escHtml(l.msg)}</span></div>`).join('');
 }
 
-// ===================== SOLUTION COLOR PANEL =====================
+const DEFAULT_SOL_COLORS = {
+  '健康': '#95a0ab', '家事': '#b79c8a', '仕事': '#8f99a8', '連絡': '#9fae9e',
+  '習慣': '#a39db2', '移動': '#b2b1ab', 'ニュース': '#a4adba', '朝食': '#c0aa7f'
+};
+function getSolColor(sol) {
+  if (!sol) return '#b4b4b0';
+  if (solColors[sol]) return solColors[sol];
+  const lower = sol.toLowerCase();
+  for (const [k, c] of Object.entries(DEFAULT_SOL_COLORS)) {
+    if (lower.includes(k.toLowerCase()) || k.toLowerCase().includes(lower)) return c;
+  }
+  let hash = 0;
+  for (let i = 0; i < sol.length; i++) hash = sol.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 16%, 62%)`;
+}
 function getUniqueSolutions() {
   const map = {};
-  tasks.forEach(t => {
-    if (t.solution) {
-      if (!map[t.solution]) map[t.solution] = 0;
-      map[t.solution]++;
-    }
-  });
+  tasks.forEach(t => { if (t.solution) map[t.solution] = (map[t.solution] || 0) + 1; });
   return map;
 }
-
 function renderSolColorPanel() {
   const panel = document.getElementById('solColorPanel');
   const solMap = getUniqueSolutions();
   const sols = Object.keys(solMap);
   if (!sols.length) {
-    panel.innerHTML = '<p style="font-size:12px;color:var(--text3);">タスクを追加するとここに表示されます</p>';
+    panel.innerHTML = '<p style="font-size:12px;color:var(--muted);">タスクを追加するとここに表示されます。</p>';
     return;
   }
-  panel.innerHTML = `<table class="sol-color-table"><tbody>
-    ${sols.map(sol => {
-      const color = getSolColor(sol);
-      const count = solMap[sol];
-      return `<tr>
-        <td><span class="sol-color-preview" style="background:${escHtml(color)};"></span><span class="sol-name-cell">${escHtml(sol)}</span></td>
-        <td><span class="sol-count">${count}件</span></td>
-        <td style="text-align:right;">
-          <input type="color" value="${escHtml(color)}" data-sol="${escHtml(sol)}"
-            style="width:28px;height:28px;padding:1px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:none;"
-            title="${escHtml(sol)}のカラーを変更">
-        </td>
-      </tr>`;
-    }).join('')}
-  </tbody></table>`;
-
+  panel.innerHTML = `<table class="sol-color-table"><tbody>${sols.map(sol => {
+    const color = getSolColor(sol);
+    return `<tr>
+      <td><span class="sol-color-preview" style="background:${escHtml(color)}"></span><span class="sol-name-cell">${escHtml(sol)}</span></td>
+      <td><span class="sol-count">${solMap[sol]}件</span></td>
+      <td style="text-align:right;"><input type="color" value="${escHtml(color)}" data-sol="${escHtml(sol)}" style="width:30px;height:30px;padding:1px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;"></td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
   panel.querySelectorAll('input[type="color"]').forEach(inp => {
     inp.addEventListener('input', () => {
       const sol = inp.dataset.sol;
       solColors[sol] = inp.value;
+      tasks.forEach(t => { if (t.solution === sol) t.color = inp.value; });
       saveSolColors();
-      // Sync tasks that use this solution and don't have custom color override
-      tasks.forEach(t => {
-        if (t.solution === sol) t.color = inp.value;
-      });
       saveTasks();
       renderSolColorPanel();
       renderTaskList();
@@ -720,30 +833,48 @@ function renderSolColorPanel() {
   });
 }
 
-// ===================== MANAGE: task list =====================
 const taskSelect = document.getElementById('taskSelect');
 const taskNameInput = document.getElementById('taskNameInput');
 const taskUrlInput = document.getElementById('taskUrlInput');
 const solutionNameInput = document.getElementById('solutionNameInput');
 const solutionColorInput = document.getElementById('solutionColorInput');
+const weekdayGrid = document.getElementById('weekdayGrid');
+
+function renderWeekdaySelector() {
+  weekdayGrid.innerHTML = '';
+  WEEKDAY_LABELS.forEach((label, idx) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'weekday-chip' + (selectedWeekdays.includes(idx) ? ' active' : '');
+    btn.textContent = label;
+    btn.dataset.day = idx;
+    btn.addEventListener('click', () => {
+      if (selectedWeekdays.includes(idx)) selectedWeekdays = selectedWeekdays.filter(v => v !== idx);
+      else selectedWeekdays = [...selectedWeekdays, idx].sort((a,b) => a-b);
+      if (selectedWeekdays.length === 0) selectedWeekdays = [...ALL_WEEKDAYS];
+      renderWeekdaySelector();
+    });
+    weekdayGrid.appendChild(btn);
+  });
+}
 
 function refreshTaskSelect() {
   const cur = taskSelect.value;
   taskSelect.innerHTML = '<option value="">— 新規タスク —</option>';
   tasks.forEach(t => {
     const o = document.createElement('option');
-    o.value = t.id; o.textContent = t.name;
+    o.value = t.id;
+    o.textContent = t.name;
     taskSelect.appendChild(o);
   });
   if (tasks.find(t => t.id === cur)) taskSelect.value = cur;
   document.getElementById('taskCount').textContent = tasks.length ? `（${tasks.length}件）` : '';
   document.getElementById('clearAllBtn').style.display = tasks.length ? 'inline-flex' : 'none';
 }
-
 function renderTaskList() {
   const container = document.getElementById('taskListContainer');
   if (!tasks.length) {
-    container.innerHTML = '<div class="empty-state">タスクがありません<br><small>フォームから追加、またはJSONをインポートしてください</small></div>';
+    container.innerHTML = '<div class="empty-state">タスクがありません。<br><small>フォームから追加、またはJSONをインポートしてください。</small></div>';
     return;
   }
   const curSel = taskSelect.value;
@@ -752,27 +883,26 @@ function renderTaskList() {
     const hasUrl = t.url && t.url.trim();
     const sel = curSel === t.id ? ' selected' : '';
     return `<div class="mgr-task-item${sel}" data-id="${escHtml(t.id)}" tabindex="0" role="button">
-      <span class="task-dot" style="background:${escHtml(color)};"></span>
+      <span class="task-dot" style="background:${escHtml(color)}"></span>
       <span class="task-name-cell">${escHtml(t.name)}</span>
-      ${t.solution ? `<span class="task-sol-badge" style="background:${escHtml(color)}22;color:${escHtml(color)};">${escHtml(t.solution)}</span>` : ''}
-      ${hasUrl ? `<span class="task-url-icon" title="${escHtml(t.url)}">🔗</span>` : ''}
+      ${t.solution ? `<span class="task-sol-badge">${escHtml(t.solution)}</span>` : ''}
+      <span class="task-days-badge">${escHtml(weekdaySummary(t.weekdays))}</span>
+      ${hasUrl ? '<span class="task-url-icon">🔗</span>' : ''}
     </div>`;
   }).join('');
   container.querySelectorAll('.mgr-task-item').forEach(el => {
-    el.addEventListener('click', () => {
-      taskSelect.value = el.dataset.id;
-      taskSelect.dispatchEvent(new Event('change'));
-    });
+    el.addEventListener('click', () => { taskSelect.value = el.dataset.id; taskSelect.dispatchEvent(new Event('change')); });
     el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') el.click(); });
   });
 }
-
 function resetForm() {
   taskSelect.value = '';
   taskNameInput.value = '';
   taskUrlInput.value = '';
   solutionNameInput.value = '';
-  solutionColorInput.value = '#2d6a4f';
+  solutionColorInput.value = '#7b8796';
+  selectedWeekdays = [...ALL_WEEKDAYS];
+  renderWeekdaySelector();
   document.getElementById('deleteTaskBtn').style.display = 'none';
   renderTaskList();
 }
@@ -780,8 +910,11 @@ function resetForm() {
 taskSelect.addEventListener('change', () => {
   const sel = taskSelect.value;
   if (!sel) {
-    taskNameInput.value = ''; taskUrlInput.value = '';
-    solutionNameInput.value = ''; solutionColorInput.value = '#2d6a4f';
+    taskNameInput.value = '';
+    taskUrlInput.value = '';
+    solutionNameInput.value = '';
+    solutionColorInput.value = '#7b8796';
+    selectedWeekdays = [...ALL_WEEKDAYS];
     document.getElementById('deleteTaskBtn').style.display = 'none';
   } else {
     const t = tasks.find(x => x.id === sel);
@@ -790,12 +923,13 @@ taskSelect.addEventListener('change', () => {
       taskUrlInput.value = t.url || '';
       solutionNameInput.value = t.solution || '';
       solutionColorInput.value = t.color || getSolColor(t.solution);
+      selectedWeekdays = normalizeWeekdays(t.weekdays);
       document.getElementById('deleteTaskBtn').style.display = 'inline-flex';
     }
   }
+  renderWeekdaySelector();
   renderTaskList();
 });
-
 solutionNameInput.addEventListener('input', () => {
   solutionColorInput.value = getSolColor(solutionNameInput.value.trim());
 });
@@ -805,17 +939,18 @@ document.getElementById('saveTaskBtn').addEventListener('click', () => {
   const url = taskUrlInput.value.trim();
   const solution = solutionNameInput.value.trim();
   const color = solutionColorInput.value;
+  const weekdays = normalizeWeekdays(selectedWeekdays);
   if (!name) { alert('タスク名は必須です。'); taskNameInput.focus(); return; }
   if (solution) { solColors[solution] = color; saveSolColors(); }
   const selectedId = taskSelect.value;
   if (!selectedId) {
-    tasks.push({ id: generateId(), name, url, solution, color, solutionColor: color });
+    tasks.push({ id: generateId(), name, url, solution, color, weekdays });
     addLog('➕ 新規タスク追加: ' + name);
     showToast('タスクを追加しました');
   } else {
     const idx = tasks.findIndex(t => t.id === selectedId);
     if (idx >= 0) {
-      tasks[idx] = { ...tasks[idx], name, url, solution, color, solutionColor: color };
+      tasks[idx] = { ...tasks[idx], name, url, solution, color, weekdays };
       addLog('✏️ タスク更新: ' + name);
       showToast('タスクを更新しました');
     }
@@ -832,9 +967,15 @@ document.getElementById('deleteTaskBtn').addEventListener('click', () => {
   if (!selectedId) return;
   const t = tasks.find(x => x.id === selectedId);
   if (!t || !confirm(`「${t.name}」を削除しますか？`)) return;
-  addLog('❌ タスク削除: ' + t.name);
   tasks = tasks.filter(x => x.id !== selectedId);
-  saveTasks(); refreshTaskSelect(); renderSolColorPanel(); resetForm(); renderExec();
+  delete checkedIds[selectedId];
+  saveChecked(checkedIds);
+  saveTasks();
+  addLog('❌ タスク削除: ' + t.name);
+  refreshTaskSelect();
+  renderSolColorPanel();
+  resetForm();
+  renderExec();
   showToast('タスクを削除しました');
 });
 
@@ -842,37 +983,45 @@ document.getElementById('clearAllBtn').addEventListener('click', () => {
   if (!confirm('全タスクを削除しますか？この操作は元に戻せません。')) return;
   addLog('🗑 全タスク削除（' + tasks.length + '件）');
   tasks = [];
-  saveTasks(); refreshTaskSelect(); renderSolColorPanel(); resetForm(); renderExec();
+  checkedIds = {};
+  saveTasks();
+  saveChecked(checkedIds);
+  refreshTaskSelect();
+  renderSolColorPanel();
+  resetForm();
+  celebrationShown = false;
+  hideCelebration();
+  renderExec();
   showToast('全タスクを削除しました');
 });
 
-// ===================== EXPORT =====================
 document.getElementById('exportBtn').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify(tasks, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'tasks_export.json';
+  a.download = 'morning_tasks_export.json';
   a.click();
   URL.revokeObjectURL(a.href);
   addLog('📤 エクスポート（' + tasks.length + '件）');
   showToast('エクスポートしました');
 });
-
-// ===================== IMPORT =====================
 function importJson(text) {
   let data;
-  try { data = JSON.parse(text); } catch(e) { alert('JSONの解析に失敗しました。\n' + e.message); return; }
+  try { data = JSON.parse(text); }
+  catch(e) { alert('JSONの解析に失敗しました。\n' + e.message); return; }
   if (!Array.isArray(data)) { alert('JSONは配列形式である必要があります。'); return; }
   let imported = 0, skipped = 0;
   data.forEach(item => {
     if (!item.name) { skipped++; return; }
     const id = item.id || generateId();
-    const existIdx = tasks.findIndex(t => t.id === id);
-    const sol = item.solution || '';
-    const color = item.color || item.solutionColor || getSolColor(sol);
-    if (sol && !solColors[sol]) { solColors[sol] = color; }
-    const normalized = { id, name: item.name, url: item.url || '', solution: sol, solutionColor: color, color };
-    if (existIdx >= 0) tasks[existIdx] = normalized; else tasks.push(normalized);
+    const idx = tasks.findIndex(t => t.id === id);
+    const solution = item.solution || '';
+    const color = item.color || item.solutionColor || getSolColor(solution);
+    const weekdays = normalizeWeekdays(item.weekdays);
+    if (solution && !solColors[solution]) solColors[solution] = color;
+    const normalized = { id, name: item.name, url: item.url || '', solution, color, weekdays };
+    if (idx >= 0) tasks[idx] = normalized;
+    else tasks.push(normalized);
     imported++;
   });
   saveTasks(); saveSolColors();
@@ -880,14 +1029,12 @@ function importJson(text) {
   addLog(`📥 インポート完了: ${imported}件, スキップ${skipped}件`);
   showToast(`${imported}件をインポートしました`);
 }
-
 function handleFile(file) {
   if (!file || !file.name.endsWith('.json')) { alert('.jsonファイルを選択してください。'); return; }
   const reader = new FileReader();
   reader.onload = e => importJson(e.target.result);
   reader.readAsText(file, 'utf-8');
 }
-
 const fileInput = document.getElementById('fileInput');
 const importZone = document.getElementById('importZone');
 fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); fileInput.value = ''; });
@@ -896,121 +1043,191 @@ document.getElementById('importBtnHeader').addEventListener('click', () => fileI
 importZone.addEventListener('dragover', e => { e.preventDefault(); importZone.classList.add('drag-over'); });
 importZone.addEventListener('dragleave', () => importZone.classList.remove('drag-over'));
 importZone.addEventListener('drop', e => {
-  e.preventDefault(); importZone.classList.remove('drag-over');
+  e.preventDefault();
+  importZone.classList.remove('drag-over');
   if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
 });
 
-// ===================== EXECUTE TAB =====================
 function setExecDate() {
   const d = new Date();
   const days = ['日','月','火','水','木','金','土'];
-  document.getElementById('execDate').textContent =
-    `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+  document.getElementById('execDate').textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+}
+function updateProgress() {
+  const todayTasks = getTodayTasks();
+  const total = todayTasks.length;
+  const done = todayTasks.filter(t => checkedIds[t.id]).length;
+  const wrap = document.getElementById('execProgressWrap');
+  const fill = document.getElementById('execProgressFill');
+  const label = document.getElementById('execProgressLabel');
+  const note = document.getElementById('todayStatsNote');
+  const offdayCount = tasks.length - total;
+  note.textContent = `今日の対象タスク ${total}件 / 対象外 ${offdayCount}件`;
+  if (!tasks.length) {
+    wrap.style.display = 'none';
+    celebrationShown = false;
+    hideCelebration();
+    return;
+  }
+  wrap.style.display = 'flex';
+  if (!total) {
+    fill.style.width = '0%';
+    fill.style.background = 'var(--muted)';
+    label.textContent = '対象タスクなし';
+    label.style.background = 'var(--muted)';
+    wrap.style.borderColor = 'var(--line)';
+    celebrationShown = false;
+    hideCelebration();
+    return;
+  }
+  const pct = Math.round((done / total) * 100);
+  fill.style.width = pct + '%';
+  fill.style.background = done === total ? 'var(--ok)' : 'var(--accent)';
+  label.textContent = `${done} / ${total} 完了`;
+  label.style.background = done === total ? 'var(--ok)' : (done > 0 ? 'var(--accent)' : 'var(--muted)');
+  wrap.style.borderColor = done === total ? 'rgba(141,161,125,.55)' : (done > 0 ? 'rgba(123,135,150,.35)' : 'var(--line)');
+  if (done === total) {
+    if (!celebrationShown) {
+      celebrationShown = true;
+      showCelebration();
+    }
+  } else {
+    celebrationShown = false;
+    hideCelebration();
+  }
+}
+function updateClearBtn() {
+  const btn = document.getElementById('clearCheckedBtn');
+  btn.style.display = tasks.some(t => checkedIds[t.id]) ? 'inline-flex' : 'none';
+}
+function toggleChecked(id) {
+  if (checkedIds[id]) delete checkedIds[id];
+  else checkedIds[id] = true;
+  saveChecked(checkedIds);
+  updateProgress();
+  updateClearBtn();
+}
+function clearAllChecked() {
+  checkedIds = {};
+  saveChecked(checkedIds);
+  celebrationShown = false;
+  hideCelebration();
+  updateProgress();
+  updateClearBtn();
+  renderExec();
 }
 
-// --- LIST VIEW ---
 function renderExecList() {
   const wrap = document.getElementById('execContainer');
   if (!tasks.length) {
-    wrap.innerHTML = '<div class="empty-state" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);">タスクがありません<br><small>「タスク管理」タブからタスクを追加してください</small></div>';
+    wrap.innerHTML = '<div class="card"><div class="empty-state">タスクがありません。<br><small>「タスク管理」タブから朝のルーティンを追加してください。</small></div></div>';
     return;
   }
   const card = document.createElement('div');
   card.className = 'card';
-  card.style.overflow = 'hidden';
   const list = document.createElement('div');
   list.className = 'exec-list';
-  list.id = 'execList';
-
   tasks.forEach((t, i) => {
     const color = t.color || getSolColor(t.solution);
     const hasUrl = t.url && t.url.trim();
     const isDone = !!checkedIds[t.id];
+    const offday = !isTaskForToday(t);
     const item = document.createElement('div');
-    item.className = 'exec-list-item' + (isDone ? ' done' : '');
+    item.className = 'exec-list-item' + (isDone ? ' done' : '') + (offday ? ' offday' : '');
     item.dataset.idx = i;
     item.dataset.id = t.id;
     item.draggable = true;
 
-    // checkbox
+    const handle = document.createElement('span');
+    handle.className = 'drag-handle';
+    handle.textContent = '⠿';
+    item.appendChild(handle);
+
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.className = 'exec-checkbox';
     cb.checked = isDone;
-    cb.title = isDone ? '完了を取り消す' : '完了にする';
-    cb.addEventListener('change', (e) => {
+    cb.disabled = offday;
+    cb.title = offday ? '今日は対象外です' : '';
+    cb.addEventListener('change', e => {
       e.stopPropagation();
       toggleChecked(t.id);
       item.classList.toggle('done', cb.checked);
+      renderExec();
     });
-
-    item.innerHTML = `<span class="drag-handle" title="ドラッグして並び替え">⠿</span>`;
     item.appendChild(cb);
 
-    const pill = t.solution
-      ? Object.assign(document.createElement('span'), { className: 'exec-sol-pill', textContent: t.solution, style: `background:${color};` })
-      : null;
-    if (pill) item.appendChild(pill);
+    if (t.solution) {
+      const pill = document.createElement('span');
+      pill.className = 'exec-sol-pill';
+      pill.textContent = t.solution;
+      pill.style.background = color;
+      item.appendChild(pill);
+    }
 
-    const nameSpan = Object.assign(document.createElement('span'), { className: 'exec-task-name', textContent: t.name });
-    item.appendChild(nameSpan);
+    const name = document.createElement('span');
+    name.className = 'exec-task-name';
+    name.textContent = t.name;
+    item.appendChild(name);
+
+    const schedule = document.createElement('span');
+    schedule.className = 'exec-schedule-tag';
+    schedule.textContent = offday ? `対象外 (${weekdaySummary(t.weekdays)})` : weekdaySummary(t.weekdays);
+    item.appendChild(schedule);
 
     if (hasUrl) {
-      const linkBtn = document.createElement('a');
-      linkBtn.href = t.url;
-      linkBtn.target = '_blank';
-      linkBtn.rel = 'noopener';
-      linkBtn.className = 'exec-link-btn';
-      linkBtn.textContent = '🔗 開く';
-      linkBtn.addEventListener('click', e => e.stopPropagation());
-      item.appendChild(linkBtn);
-
-      item.style.cursor = 'pointer';
-      item.addEventListener('click', (e) => {
+      const link = document.createElement('a');
+      link.href = t.url;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.className = 'exec-link-btn';
+      link.textContent = '開く';
+      if (offday) {
+        link.style.opacity = '.45';
+        link.style.pointerEvents = 'none';
+      }
+      link.addEventListener('click', e => e.stopPropagation());
+      item.appendChild(link);
+      item.addEventListener('click', e => {
         if (e.target.closest('.exec-link-btn') || e.target.closest('.drag-handle') || e.target.closest('.exec-checkbox')) return;
-        if (!isDone) window.open(t.url, '_blank', 'noopener');
+        if (!isDone && !offday) window.open(t.url, '_blank', 'noopener');
       });
     } else {
-      const dash = Object.assign(document.createElement('span'), { className: 'exec-no-url', textContent: '—' });
+      const dash = document.createElement('span');
+      dash.className = 'exec-no-url';
+      dash.textContent = '—';
       item.appendChild(dash);
     }
 
     setupListDrag(item, list);
     list.appendChild(item);
   });
-
   card.appendChild(list);
   wrap.innerHTML = '';
   wrap.appendChild(card);
 }
-
 function setupListDrag(item, list) {
   item.addEventListener('dragstart', e => {
-    dragSrcIdx = parseInt(item.dataset.idx);
-    item.classList.add('dragging-ghost');
+    dragSrcIdx = parseInt(item.dataset.idx, 10);
+    item.style.opacity = '.35';
     e.dataTransfer.effectAllowed = 'move';
   });
   item.addEventListener('dragend', () => {
-    item.classList.remove('dragging-ghost');
-    list.querySelectorAll('.exec-list-item').forEach(el => {
-      el.classList.remove('drag-over-top', 'drag-over-bottom');
-    });
+    item.style.opacity = '';
+    list.querySelectorAll('.exec-list-item').forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
   });
   item.addEventListener('dragover', e => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
     const rect = item.getBoundingClientRect();
     const mid = rect.top + rect.height / 2;
-    list.querySelectorAll('.exec-list-item').forEach(el => el.classList.remove('drag-over-top','drag-over-bottom'));
+    list.querySelectorAll('.exec-list-item').forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
     if (e.clientY < mid) item.classList.add('drag-over-top');
     else item.classList.add('drag-over-bottom');
   });
-  item.addEventListener('dragleave', () => {
-    item.classList.remove('drag-over-top', 'drag-over-bottom');
-  });
+  item.addEventListener('dragleave', () => item.classList.remove('drag-over-top', 'drag-over-bottom'));
   item.addEventListener('drop', e => {
     e.preventDefault();
-    const targetIdx = parseInt(item.dataset.idx);
+    const targetIdx = parseInt(item.dataset.idx, 10);
     if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
     const rect = item.getBoundingClientRect();
     const mid = rect.top + rect.height / 2;
@@ -1023,55 +1240,61 @@ function setupListDrag(item, list) {
     dragSrcIdx = null;
     saveTasks();
     renderExec();
+    renderTaskList();
+    refreshTaskSelect();
   });
 }
-
-// --- CARD VIEW ---
 function renderExecCards() {
   const wrap = document.getElementById('execContainer');
   if (!tasks.length) {
-    wrap.innerHTML = '<div class="empty-state" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);">タスクがありません<br><small>「タスク管理」タブからタスクを追加してください</small></div>';
+    wrap.innerHTML = '<div class="card"><div class="empty-state">タスクがありません。<br><small>「タスク管理」タブから朝のルーティンを追加してください。</small></div></div>';
     return;
   }
   const grid = document.createElement('div');
   grid.className = 'exec-cards';
-  grid.id = 'execCards';
-
   tasks.forEach((t, i) => {
     const color = t.color || getSolColor(t.solution);
     const hasUrl = t.url && t.url.trim();
     const isDone = !!checkedIds[t.id];
+    const offday = !isTaskForToday(t);
     const card = document.createElement('div');
-    card.className = 'exec-card' + (isDone ? ' done' : '');
+    card.className = 'exec-card' + (isDone ? ' done' : '') + (offday ? ' offday' : '');
     card.dataset.idx = i;
-    card.dataset.id = t.id;
     card.draggable = true;
-    card.style.borderTop = `3px solid ${color}`;
+    card.style.borderTop = `4px solid ${color}`;
 
-    // checkbox (top-right)
     const cbWrap = document.createElement('div');
     cbWrap.className = 'card-check-wrap';
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.className = 'exec-checkbox';
     cb.checked = isDone;
-    cb.title = isDone ? '完了を取り消す' : '完了にする';
-    cb.addEventListener('change', (e) => {
+    cb.disabled = offday;
+    cb.addEventListener('change', e => {
       e.stopPropagation();
       toggleChecked(t.id);
-      card.classList.toggle('done', cb.checked);
+      renderExec();
     });
     cbWrap.appendChild(cb);
     card.appendChild(cbWrap);
 
     if (t.solution) {
-      const pill = Object.assign(document.createElement('span'), { className: 'exec-card-pill', textContent: t.solution });
+      const pill = document.createElement('span');
+      pill.className = 'exec-card-pill';
+      pill.textContent = t.solution;
       pill.style.background = color;
       card.appendChild(pill);
     }
 
-    const nameSpan = Object.assign(document.createElement('span'), { className: 'exec-card-name', textContent: t.name });
-    card.appendChild(nameSpan);
+    const schedule = document.createElement('span');
+    schedule.className = 'exec-schedule-tag';
+    schedule.textContent = offday ? `対象外 (${weekdaySummary(t.weekdays)})` : weekdaySummary(t.weekdays);
+    card.appendChild(schedule);
+
+    const name = document.createElement('span');
+    name.className = 'exec-card-name';
+    name.textContent = t.name;
+    card.appendChild(name);
 
     const footer = document.createElement('div');
     footer.className = 'exec-card-footer';
@@ -1081,34 +1304,37 @@ function renderExecCards() {
       link.target = '_blank';
       link.rel = 'noopener';
       link.className = 'exec-card-link';
-      link.textContent = '🔗 開く';
+      link.textContent = '開く';
+      if (offday) {
+        link.style.opacity = '.45';
+        link.style.pointerEvents = 'none';
+      }
       link.addEventListener('click', e => e.stopPropagation());
       footer.appendChild(link);
     } else {
       footer.appendChild(document.createElement('span'));
     }
-    const dragIcon = Object.assign(document.createElement('span'), { className: 'exec-card-drag', title: 'ドラッグして並び替え', textContent: '⠿' });
-    footer.appendChild(dragIcon);
+    const drag = document.createElement('span');
+    drag.className = 'exec-card-drag';
+    drag.textContent = '⠿';
+    footer.appendChild(drag);
     card.appendChild(footer);
 
     if (hasUrl) {
-      card.addEventListener('click', (e) => {
+      card.addEventListener('click', e => {
         if (e.target.closest('.exec-card-link') || e.target.closest('.exec-card-drag') || e.target.closest('.exec-checkbox')) return;
-        if (!isDone) window.open(t.url, '_blank', 'noopener');
+        if (!isDone && !offday) window.open(t.url, '_blank', 'noopener');
       });
     }
-
     setupCardDrag(card, grid);
     grid.appendChild(card);
   });
-
   wrap.innerHTML = '';
   wrap.appendChild(grid);
 }
-
 function setupCardDrag(card, grid) {
   card.addEventListener('dragstart', e => {
-    dragSrcIdx = parseInt(card.dataset.idx);
+    dragSrcIdx = parseInt(card.dataset.idx, 10);
     card.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
   });
@@ -1124,16 +1350,17 @@ function setupCardDrag(card, grid) {
   card.addEventListener('dragleave', () => card.classList.remove('drag-over-card'));
   card.addEventListener('drop', e => {
     e.preventDefault();
-    const targetIdx = parseInt(card.dataset.idx);
+    const targetIdx = parseInt(card.dataset.idx, 10);
     if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
     const moved = tasks.splice(dragSrcIdx, 1)[0];
     tasks.splice(targetIdx, 0, moved);
     dragSrcIdx = null;
     saveTasks();
     renderExec();
+    renderTaskList();
+    refreshTaskSelect();
   });
 }
-
 function renderExec() {
   if (execViewMode === 'list') renderExecList();
   else renderExecCards();
@@ -1141,7 +1368,6 @@ function renderExec() {
   updateClearBtn();
 }
 
-// ===================== VIEW TOGGLE =====================
 document.getElementById('viewListBtn').addEventListener('click', () => {
   execViewMode = 'list';
   document.getElementById('viewListBtn').classList.add('active');
@@ -1155,7 +1381,6 @@ document.getElementById('viewCardBtn').addEventListener('click', () => {
   renderExec();
 });
 
-// ===================== TABS =====================
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1165,14 +1390,36 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
-// ===================== CLEAR CHECKED =====================
 document.getElementById('clearCheckedBtn').addEventListener('click', () => {
   clearAllChecked();
-  showToast('チェックをクリアしました');
+  showToast('完了チェックをクリアしました');
 });
 
-// ===================== INIT =====================
+function showCelebration() {
+  const overlay = document.getElementById('celebrationOverlay');
+  if (celebrationHideTimer) clearTimeout(celebrationHideTimer);
+  overlay.classList.remove('show');
+  void overlay.offsetWidth;
+  overlay.classList.add('show');
+  overlay.setAttribute('aria-hidden', 'false');
+  celebrationHideTimer = setTimeout(() => hideCelebration(), 4500);
+}
+function hideCelebration() {
+  const overlay = document.getElementById('celebrationOverlay');
+  overlay.classList.remove('show');
+  overlay.setAttribute('aria-hidden', 'true');
+}
+
+document.getElementById('celebrationCloseBtn').addEventListener('click', hideCelebration);
+document.getElementById('celebrationOverlay').addEventListener('click', e => {
+  if (e.target.id === 'celebrationOverlay') hideCelebration();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') hideCelebration();
+});
+
 setExecDate();
+renderWeekdaySelector();
 refreshTaskSelect();
 renderSolColorPanel();
 renderTaskList();
