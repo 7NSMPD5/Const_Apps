@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>マインドマップ ビューア | Markdown Mindmap</title>
+<style>
+  :root{
+    --bg: #0a0f1a;
+    --bg-grid: #0d1424;
+    --panel: #121a2b;
+    --panel-2: #0f1626;
+    --border: #202c44;
+    --border-soft: #1a2439;
+    --text: #e7edf6;
+    --text-dim: #8ba0c2;
+    --text-faint: #5a6d8c;
+    --accent: #65d4dd;
+    --accent-dim: #2a4a4d;
+    --danger: #f4746b;
+    --radius: 10px;
+    --font: "Yu Gothic UI","Hiragino Kaku Gothic ProN","Noto Sans JP","Meiryo",-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0; height:100%; background:var(--bg); color:var(--text);
+    font-family:var(--font); overflow:hidden;
+  }
+  #app{ display:flex; flex-direction:column; height:100vh; }
+
+  /* ---------- header ---------- */
+  header{
+    display:flex; align-items:center; gap:14px;
+    padding:10px 16px; background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border-bottom:1px solid var(--border); flex-shrink:0; z-index:20;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; margin-right:6px; }
+  .brand .mark{
+    width:30px; height:30px; border-radius:8px; flex-shrink:0;
+    background:radial-gradient(circle at 30% 30%, var(--accent), #1c5c61 75%);
+    box-shadow:0 0 0 1px var(--border-soft);
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px;
+  }
+  .brand .titles{ line-height:1.2; }
+  .brand .titles b{ font-size:14.5px; letter-spacing:.02em; }
+  .brand .titles span{ display:block; font-size:11px; color:var(--text-faint); }
+
+  .toolbar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:1; }
+  .btn{
+    appearance:none; border:1px solid var(--border); background:var(--panel-2);
+    color:var(--text); padding:7px 12px; border-radius:8px; font-size:12.5px;
+    cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    font-family:inherit; transition:border-color .15s, background .15s, transform .1s;
+    white-space:nowrap;
+  }
+  .btn:hover{ border-color:var(--accent); background:#132030; }
+  .btn:active{ transform:translateY(1px); }
+  .btn.primary{ background:var(--accent); color:#04262a; border-color:var(--accent); font-weight:600; }
+  .btn.primary:hover{ background:#7be0e7; }
+  .btn.ghost{ background:transparent; }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  input[type=file]{ display:none; }
+
+  .search-box{
+    display:flex; align-items:center; gap:6px; background:var(--panel-2);
+    border:1px solid var(--border); border-radius:8px; padding:5px 10px; min-width:170px;
+  }
+  .search-box input{
+    background:transparent; border:none; outline:none; color:var(--text); font-size:12.5px;
+    font-family:inherit; width:120px;
+  }
+  .search-box input::placeholder{ color:var(--text-faint); }
+  .search-count{ font-size:11px; color:var(--text-faint); white-space:nowrap; }
+
+  .spacer{ flex:1; }
+  .stats{ font-size:11.5px; color:var(--text-faint); display:flex; gap:12px; padding-right:4px; }
+  .stats b{ color:var(--text-dim); }
+
+  /* ---------- canvas area ---------- */
+  #canvas-wrap{ position:relative; flex:1; overflow:hidden;
+    background-image:
+      radial-gradient(circle at 1px 1px, #182238 1.4px, transparent 1.4px);
+    background-size: 26px 26px;
+    background-color: var(--bg-grid);
+  }
+  svg#mindmap{ width:100%; height:100%; display:block; cursor:grab; }
+  svg#mindmap.dragging{ cursor:grabbing; }
+
+  .node-box{ cursor:pointer; }
+  .node-box rect{ transition:filter .15s; }
+  .node-box:hover rect{ filter:brightness(1.18); }
+  .node-label{
+    fill:#0a1018; font-size:13px; font-weight:600; pointer-events:none;
+    font-family:var(--font);
+  }
+  .node-label.light{ fill:#eef4fb; }
+  .link-path{ fill:none; stroke-width:2.2; opacity:.85; }
+  .toggle-dot{ cursor:pointer; }
+  .toggle-dot circle{ transition:filter .15s; }
+  .toggle-dot:hover circle{ filter:brightness(1.3); }
+  .toggle-dot text{ fill:#0a1018; font-size:11px; font-weight:700; pointer-events:none; text-anchor:middle; dominant-baseline:central; }
+  .node-box.dimmed{ opacity:.18; }
+  .link-path.dimmed{ opacity:.08; }
+  .node-box.matched rect{ stroke:#ffe08a; stroke-width:2.5; }
+  .child-count{ font-size:9.5px; fill:#0a1018; opacity:.65; pointer-events:none; }
+
+  /* ---------- empty state / drop zone ---------- */
+  #empty-state{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:16px; text-align:center; padding:20px;
+  }
+  #empty-state .icon{
+    width:64px; height:64px; border-radius:16px;
+    background:radial-gradient(circle at 30% 30%, var(--accent), #1c5c61 80%);
+    display:flex; align-items:center; justify-content:center; font-size:30px;
+    box-shadow:0 10px 30px -8px rgba(101,212,221,.35);
+  }
+  #empty-state h2{ margin:0; font-size:17px; font-weight:700; }
+  #empty-state p{ margin:0; font-size:13px; color:var(--text-dim); max-width:360px; line-height:1.7; }
+  #empty-state .drop-hint{
+    font-size:12px; color:var(--text-faint); border:1.5px dashed var(--border); border-radius:12px;
+    padding:22px 36px; margin-top:4px;
+  }
+  #empty-state .drop-hint.drag-over{ border-color:var(--accent); color:var(--accent); background:rgba(101,212,221,.06); }
+  #empty-state .actions{ display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; justify-content:center; }
+
+  /* ---------- text input panel ---------- */
+  #text-panel{
+    position:absolute; top:0; right:0; bottom:0; width:420px; max-width:92vw;
+    background:var(--panel); border-left:1px solid var(--border);
+    display:flex; flex-direction:column; transform:translateX(100%);
+    transition:transform .22s ease; z-index:30; box-shadow:-14px 0 30px -10px rgba(0,0,0,.5);
+  }
+  #text-panel.open{ transform:translateX(0); }
+  #text-panel .tp-head{
+    display:flex; align-items:center; justify-content:space-between; padding:12px 14px;
+    border-bottom:1px solid var(--border);
+  }
+  #text-panel .tp-head b{ font-size:13px; }
+  #text-panel textarea{
+    flex:1; resize:none; background:var(--panel-2); border:none; outline:none;
+    color:var(--text); font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+    font-size:12.5px; line-height:1.6; padding:14px; margin:12px 14px 0 14px; border-radius:8px;
+    border:1px solid var(--border-soft);
+  }
+  #text-panel .tp-foot{ padding:12px 14px 14px; display:flex; gap:8px; justify-content:flex-end; }
+  .icon-btn{
+    width:26px; height:26px; border-radius:6px; border:1px solid var(--border);
+    background:transparent; color:var(--text-dim); cursor:pointer; display:flex;
+    align-items:center; justify-content:center; font-size:13px;
+  }
+  .icon-btn:hover{ border-color:var(--accent); color:var(--accent); }
+
+  /* ---------- zoom controls ---------- */
+  #zoom-controls{
+    position:absolute; bottom:16px; right:16px; display:flex; flex-direction:column;
+    gap:6px; background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:6px; z-index:15;
+  }
+  #zoom-controls button{
+    width:32px; height:32px; border-radius:7px; border:none; background:transparent;
+    color:var(--text-dim); font-size:16px; cursor:pointer; font-family:inherit;
+  }
+  #zoom-controls button:hover{ background:var(--panel-2); color:var(--accent); }
+  #zoom-pct{ font-size:10px; text-align:center; color:var(--text-faint); }
+
+  #legend{
+    position:absolute; bottom:16px; left:16px; z-index:15; display:flex; gap:8px;
+    flex-wrap:wrap; max-width:60vw;
+  }
+  .legend-chip{
+    display:flex; align-items:center; gap:6px; background:var(--panel); border:1px solid var(--border);
+    border-radius:20px; padding:4px 10px 4px 6px; font-size:11px; color:var(--text-dim);
+  }
+  .legend-chip .dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:4px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">
+      <div class="mark">🧠</div>
+      <div class="titles"><b>マインドマップ ビューア</b><span>Markdown → Mind Map</span></div>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn primary" id="btn-open">📂 ファイルを開く</button>
+      <input type="file" id="file-input" accept=".md,.markdown,.txt">
+      <button class="btn" id="btn-text">✏️ テキスト入力</button>
+      <button class="btn ghost" id="btn-sample">🗂 サンプル</button>
+      <span style="width:1px;height:22px;background:var(--border);"></span>
+      <button class="btn ghost" id="btn-expand-all" disabled>⤢ 全展開</button>
+      <button class="btn ghost" id="btn-collapse-all" disabled>⤡ 全折畳</button>
+      <button class="btn ghost" id="btn-reset-view" disabled>⭘ 表示リセット</button>
+      <button class="btn ghost" id="btn-export" disabled>⭳ SVG書出</button>
+      <div class="search-box">
+        <span style="font-size:12px;color:var(--text-faint);">🔍</span>
+        <input type="text" id="search-input" placeholder="ノードを検索..." disabled>
+        <span class="search-count" id="search-count"></span>
+      </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <div id="canvas-wrap">
+    <svg id="mindmap" xmlns="http://www.w3.org/2000/svg">
+      <g id="viewport"></g>
+    </svg>
+
+    <div id="empty-state">
+      <div class="icon">🧠</div>
+      <h2>マークダウンをマインドマップとして表示</h2>
+      <p>見出し（#, ##, ###...）や箇条書き（-, *, 1.）の階層構造を持つ Markdown ファイルを、ズーム・パン可能なマインドマップとして描画します。ブランチごとに色分けされ、ノードはクリックで折りたたみできます。</p>
+      <div class="drop-hint" id="drop-hint">ここに .md ファイルをドラッグ＆ドロップ<br>またはボタンからファイルを選択</div>
+      <div class="actions">
+        <button class="btn primary" id="btn-open-2">📂 ファイルを開く</button>
+        <button class="btn" id="btn-sample-2">🗂 サンプルを見る</button>
+      </div>
+    </div>
+
+    <div id="zoom-controls" style="display:none;">
+      <button id="zoom-in">＋</button>
+      <div id="zoom-pct">100%</div>
+      <button id="zoom-out">－</button>
+    </div>
+
+    <div id="legend"></div>
+  </div>
+
+  <div id="text-panel">
+    <div class="tp-head">
+      <b>Markdown テキスト入力</b>
+      <button class="icon-btn" id="tp-close">✕</button>
+    </div>
+    <textarea id="md-textarea" placeholder="# ルート
+## ブランチ1
+- 項目A
+- 項目B
+## ブランチ2
+### サブ項目"></textarea>
+    <div class="tp-foot">
+      <button class="btn ghost" id="tp-cancel">キャンセル</button>
+      <button class="btn primary" id="tp-apply">マインドマップを生成</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------------------------------------------------------
+  // Config
+  // ---------------------------------------------------------------
+  const FONT_STR = '600 13px "Yu Gothic UI","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif';
+  const H_GAP = 70;          // horizontal gap between column and next node
+  const V_GAP = 14;          // vertical gap between sibling leaves
+  const NODE_PAD_X = 16;
+  const NODE_PAD_Y = 10;
+  const LINE_HEIGHT = 18;
+  const MAX_TEXT_WIDTH = 240;
+  const MIN_NODE_H = 34;
+  const ROOT_COLOR = '#e7edf6';
+
+  const PALETTE = [
+    '#65d4dd', '#8b7cf6', '#f6a65e', '#6ee7a7',
+    '#f472b6', '#60a5fa', '#fbbf24', '#c084fc',
+    '#4ade80', '#fb923c'
+  ];
+
+  // ---------------------------------------------------------------
+  // State
+  // ---------------------------------------------------------------
+  let root = null;           // parsed + laid-out tree
+  let idCounter = 0;
+  let view = { x: 0, y: 0, scale: 1 };
+  let dragging = false, dragStart = null, viewStart = null;
+  let sourceLabel = "マインドマップ";
+
+  const svg = document.getElementById('mindmap');
+  const viewport = document.getElementById('viewport');
+  const emptyState = document.getElementById('empty-state');
+  const zoomControls = document.getElementById('zoom-controls');
+  const legendEl = document.getElementById('legend');
+  const statsEl = document.getElementById('stats');
+
+  // measuring canvas
+  const measureCanvas = document.createElement('canvas');
+  const mctx = measureCanvas.getContext('2d');
+  mctx.font = FONT_STR;
+
+  // ---------------------------------------------------------------
+  // Markdown outline parser
+  // supports: ATX headings (#..######) and bullet/numbered lists
+  // with indentation. Produces nested tree.
+  // ---------------------------------------------------------------
+  function parseMarkdown(text, label){
+    const lines = text.replace(/\r\n/g,'\n').split('\n');
+    const synthRoot = { id: 'root', text: label || 'マインドマップ', children: [], collapsed:false, level:-1 };
+    const stack = [{ level: -1, node: synthRoot }];
+
+    for (let raw of lines){
+      if (!raw.trim()) continue;
+      const headingMatch = raw.match(/^(#{1,6})\s+(.*)$/);
+      let level, content;
+
+      if (headingMatch){
+        level = headingMatch[1].length;
+        content = headingMatch[2].trim();
+      } else {
+        const listMatch = raw.match(/^(\s*)(?:[-*+]|\d+\.)\s+(.*)$/);
+        if (listMatch){
+          const indentRaw = listMatch[1].replace(/\t/g,'  ');
+          const indentUnits = Math.floor(indentRaw.length / 2);
+          level = 10 + indentUnits;
+          content = listMatch[2].trim();
+        } else {
+          // plain paragraph line -> treat as a bullet at current depth+1
+          const indentRaw = (raw.match(/^(\s*)/)||['',''])[1].replace(/\t/g,'  ');
+          const indentUnits = Math.floor(indentRaw.length / 2);
+          level = 10 + indentUnits;
+          content = raw.trim();
+        }
+      }
+      if (!content) continue;
+
+      // strip simple md emphasis/inline code markers for display
+      content = content.replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1')
+                        .replace(/`([^`]*)`/g,'$1').replace(/^\[(.*)\]\(.*\)$/,'$1');
+
+      while (stack.length > 1 && stack[stack.length-1].level >= level) stack.pop();
+      const parent = stack[stack.length-1].node;
+      const node = { id: 'n' + (idCounter++), text: content, children: [], collapsed:false, level };
+      parent.children.push(node);
+      stack.push({ level, node });
+    }
+
+    // promote single H1 child to be the actual root
+    if (synthRoot.children.length === 1 && synthRoot.children[0].level === 1){
+      return synthRoot.children[0];
+    }
+    return synthRoot;
+  }
+
+  // ---------------------------------------------------------------
+  // Text wrapping / measuring
+  // ---------------------------------------------------------------
+  function wrapLabel(text){
+    mctx.font = FONT_STR;
+    if (mctx.measureText(text).width <= MAX_TEXT_WIDTH) return [text];
+    const lines = [];
+    let current = '';
+    for (const ch of text){
+      const test = current + ch;
+      if (mctx.measureText(test).width > MAX_TEXT_WIDTH && current.length > 0){
+        lines.push(current);
+        current = ch;
+      } else {
+        current = test;
+      }
+      if (lines.length === 2){
+        // cap at 3 lines total; finish trimming below
+      }
+    }
+    if (current) lines.push(current);
+    if (lines.length > 3){
+      lines.length = 3;
+      lines[2] = lines[2].slice(0, -1) + '…';
+    }
+    return lines;
+  }
+
+  function measureNode(node){
+    const lines = wrapLabel(node.text);
+    let maxW = 0;
+    for (const l of lines) maxW = Math.max(maxW, mctx.measureText(l).width);
+    node._lines = lines;
+    node._w = Math.min(MAX_TEXT_WIDTH, maxW) + NODE_PAD_X * 2;
+    node._h = Math.max(MIN_NODE_H, lines.length * LINE_HEIGHT + NODE_PAD_Y * 2);
+  }
+
+  // ---------------------------------------------------------------
+  // Color assignment: each top-level branch gets a hue; descendants
+  // inherit with progressively lighter tint.
+  // ---------------------------------------------------------------
+  function hexToRgb(hex){
+    const n = parseInt(hex.slice(1), 16);
+    return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
+  }
+  function tint(hex, amount){
+    const {r,g,b} = hexToRgb(hex);
+    const mix = (c)=> Math.round(c + (255-c)*amount);
+    return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
+  }
+
+  function assignColors(node, color, depthInBranch){
+    node._color = color;
+    node._fillTint = color ? tint(color, Math.min(depthInBranch*0.14, 0.55)) : '#1c2740';
+    node.children.forEach(c => assignColors(c, color, depthInBranch+1));
+  }
+
+  // ---------------------------------------------------------------
+  // Layout: depth (x) via per-column max width; y via recursive
+  // leaf stacking, skipping collapsed subtrees.
+  // ---------------------------------------------------------------
+  function layoutTree(rootNode){
+    // assign depth
+    const columns = []; // columns[depth] = array of nodes
+    (function walk(n, depth){
+      n._depth = depth;
+      if (!columns[depth]) columns[depth] = [];
+      columns[depth].push(n);
+      measureNode(n);
+      if (!n.collapsed){
+        n.children.forEach(c => walk(c, depth+1));
+      }
+    })(rootNode, 0);
+
+    // x position per column (cumulative max width + gap)
+    const colWidth = columns.map(col => col.reduce((m,n)=>Math.max(m,n._w), 0));
+    const colX = [];
+    let acc = 0;
+    for (let d=0; d<colWidth.length; d++){
+      colX[d] = acc;
+      acc += colWidth[d] + H_GAP;
+    }
+    (function applyX(n){
+      n._x = colX[n._depth];
+      if (!n.collapsed) n.children.forEach(applyX);
+    })(rootNode);
+
+    // y position: recursive leaf stacking (only visible children)
+    let cursor = 0;
+    function assignY(n){
+      const kids = n.collapsed ? [] : n.children;
+      if (kids.length === 0){
+        n._y = cursor;
+        cursor += Math.max(n._h, MIN_NODE_H) + V_GAP;
+        return n._y;
+      }
+      const childCenters = kids.map(assignY);
+      n._y = (childCenters[0] + childCenters[childCenters.length-1]) / 2;
+      return n._y;
+    }
+    assignY(rootNode);
+
+    return { colWidth };
+  }
+
+  function flatten(node, acc){
+    acc = acc || [];
+    acc.push(node);
+    if (!node.collapsed) node.children.forEach(c => flatten(c, acc));
+    return acc;
+  }
+
+  function countAll(node){
+    let n = 1;
+    node.children.forEach(c => n += countAll(c));
+    return n;
+  }
+  function maxDepth(node, d){
+    d = d || 0;
+    if (node.children.length === 0) return d;
+    return Math.max(...node.children.map(c => maxDepth(c, d+1)));
+  }
+
+  // ---------------------------------------------------------------
+  // Rendering
+  // ---------------------------------------------------------------
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs){
+    const e = document.createElementNS(SVGNS, tag);
+    if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function bezierPath(x1,y1,x2,y2){
+    const mx = (x1+x2)/2;
+    return `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`;
+  }
+
+  function isLight(rgbOrHex){
+    let r,g,b;
+    if (rgbOrHex.startsWith('rgb')){
+      const m = rgbOrHex.match(/[\d.]+/g).map(Number);
+      [r,g,b] = m;
+    } else {
+      const c = hexToRgb(rgbOrHex); r=c.r; g=c.g; b=c.b;
+    }
+    return (r*0.299 + g*0.587 + b*0.114) > 165;
+  }
+
+  function render(searchTerm){
+    viewport.innerHTML = '';
+    const nodes = flatten(root);
+    const term = (searchTerm||'').trim().toLowerCase();
+    let matches = 0;
+
+    // links
+    const linkLayer = el('g');
+    nodes.forEach(n => {
+      if (n.collapsed || !n.children.length) return;
+      n.children.forEach(c => {
+        const x1 = n._x + n._w, y1 = n._y;
+        const x2 = c._x, y2 = c._y;
+        const path = el('path', {
+          d: bezierPath(x1,y1,x2,y2),
+          class: 'link-path',
+          stroke: c._color || '#3a4b6b'
+        });
+        linkLayer.appendChild(path);
+      });
+    });
+    viewport.appendChild(linkLayer);
+
+    // nodes
+    const nodeLayer = el('g');
+    nodes.forEach(n => {
+      const isMatch = term && n.text.toLowerCase().includes(term);
+      if (isMatch) matches++;
+
+      const g = el('g', { class: 'node-box' + (isMatch ? ' matched' : ''), transform: `translate(${n._x},${n._y - n._h/2})` });
+      const fill = n._depth === 0 ? '#1b2740' : (n._fillTint || '#1c2740');
+      const stroke = n._depth === 0 ? '#3a4b6b' : (n._color || '#3a4b6b');
+
+      const rect = el('rect', {
+        width: n._w, height: n._h, rx: 9, ry: 9,
+        fill: fill, stroke: stroke, 'stroke-width': n._depth === 0 ? 1.5 : 1.4
+      });
+      g.appendChild(rect);
+
+      const light = isLight(fill) ? '' : ' light';
+      const textEl = el('text', { class: 'node-label' + light, x: n._w/2, 'text-anchor':'middle' });
+      const lines = n._lines;
+      const startY = n._h/2 - ((lines.length-1) * LINE_HEIGHT)/2;
+      lines.forEach((ln, i) => {
+        const tspan = el('tspan', { x: n._w/2, y: startY + i*LINE_HEIGHT, 'dominant-baseline':'central' });
+        tspan.textContent = ln;
+        textEl.appendChild(tspan);
+      });
+      g.appendChild(textEl);
+
+      g.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        if (n.children.length){
+          n.collapsed = !n.collapsed;
+          layoutTree(root);
+          render(document.getElementById('search-input').value);
+        }
+      });
+      nodeLayer.appendChild(g);
+
+      // toggle dot for nodes with children
+      if (n.children.length){
+        const dotX = n._w, dotY = n._h/2;
+        const dot = el('g', { class: 'toggle-dot', transform: `translate(${n._x + dotX},${n._y - n._h/2 + dotY})` });
+        const circ = el('circle', { r: 9, fill: n._color || '#5a6d8c', stroke: '#0a0f1a', 'stroke-width': 1.5 });
+        const label = el('text', {});
+        label.textContent = n.collapsed ? '+' + countAll(n) : '−';
+        dot.appendChild(circ);
+        dot.appendChild(label);
+        dot.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          n.collapsed = !n.collapsed;
+          layoutTree(root);
+          render(document.getElementById('search-input').value);
+        });
+        nodeLayer.appendChild(dot);
+      }
+    });
+    viewport.appendChild(nodeLayer);
+
+    document.getElementById('search-count').textContent = term ? `${matches} 件` : '';
+    updateStats(nodes.length);
+    updateLegend();
+  }
+
+  function updateStats(visibleCount){
+    const total = countAll(root);
+    const depth = maxDepth(root);
+    statsEl.innerHTML = `<span><b>${sourceLabel}</b></span><span>ノード数 <b>${total}</b></span><span>階層 <b>${depth+1}</b></span><span>表示中 <b>${visibleCount}</b></span>`;
+  }
+
+  function updateLegend(){
+    legendEl.innerHTML = '';
+    if (!root.children || root._depth !== undefined && root._depth !== 0) {}
+    root.children.forEach(c => {
+      const chip = document.createElement('div');
+      chip.className = 'legend-chip';
+      chip.innerHTML = `<span class="dot" style="background:${c._color}"></span>${escapeHtml(truncate(c.text, 14))}`;
+      legendEl.appendChild(chip);
+    });
+  }
+  function truncate(s, n){ return s.length > n ? s.slice(0,n) + '…' : s; }
+  function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+  // ---------------------------------------------------------------
+  // View transform (pan / zoom)
+  // ---------------------------------------------------------------
+  function applyTransform(){
+    viewport.setAttribute('transform', `translate(${view.x},${view.y}) scale(${view.scale})`);
+    document.getElementById('zoom-pct').textContent = Math.round(view.scale*100) + '%';
+  }
+
+  function fitToView(){
+    // compute bbox of tree then center
+    const nodes = flatten(root);
+    let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+    nodes.forEach(n => {
+      minX = Math.min(minX, n._x);
+      maxX = Math.max(maxX, n._x + n._w);
+      minY = Math.min(minY, n._y - n._h/2);
+      maxY = Math.max(maxY, n._y + n._h/2);
+    });
+    const wrap = document.getElementById('canvas-wrap');
+    const cw = wrap.clientWidth, ch = wrap.clientHeight;
+    const treeW = Math.max(1, maxX - minX), treeH = Math.max(1, maxY - minY);
+    const scale = Math.min(1.15, Math.min((cw-80)/treeW, (ch-80)/treeH));
+    view.scale = Math.max(0.15, scale);
+    view.x = (cw - treeW*view.scale)/2 - minX*view.scale;
+    view.y = (ch - treeH*view.scale)/2 - minY*view.scale;
+    applyTransform();
+  }
+
+  svg.addEventListener('mousedown', (ev) => {
+    dragging = true;
+    svg.classList.add('dragging');
+    dragStart = { x: ev.clientX, y: ev.clientY };
+    viewStart = { x: view.x, y: view.y };
+  });
+  window.addEventListener('mousemove', (ev) => {
+    if (!dragging) return;
+    view.x = viewStart.x + (ev.clientX - dragStart.x);
+    view.y = viewStart.y + (ev.clientY - dragStart.y);
+    applyTransform();
+  });
+  window.addEventListener('mouseup', () => { dragging = false; svg.classList.remove('dragging'); });
+
+  svg.addEventListener('wheel', (ev) => {
+    ev.preventDefault();
+    const rect = svg.getBoundingClientRect();
+    const mx = ev.clientX - rect.left, my = ev.clientY - rect.top;
+    const delta = ev.deltaY < 0 ? 1.1 : 0.9;
+    const newScale = Math.min(3, Math.max(0.1, view.scale * delta));
+    // keep mouse point stable
+    view.x = mx - (mx - view.x) * (newScale/view.scale);
+    view.y = my - (my - view.y) * (newScale/view.scale);
+    view.scale = newScale;
+    applyTransform();
+  }, { passive:false });
+
+  document.getElementById('zoom-in').onclick = () => { view.scale = Math.min(3, view.scale*1.2); applyTransform(); };
+  document.getElementById('zoom-out').onclick = () => { view.scale = Math.max(0.1, view.scale/1.2); applyTransform(); };
+
+  // ---------------------------------------------------------------
+  // Load / build
+  // ---------------------------------------------------------------
+  function buildFromMarkdown(text, label){
+    idCounter = 0;
+    sourceLabel = label || 'マインドマップ';
+    root = parseMarkdown(text, sourceLabel);
+    // top-level branch colors
+    root._depth = 0;
+    root.children.forEach((c, i) => assignColors(c, PALETTE[i % PALETTE.length], 0));
+    root._color = null;
+    layoutTree(root);
+    emptyState.style.display = 'none';
+    zoomControls.style.display = 'flex';
+    document.getElementById('search-input').disabled = false;
+    ['btn-expand-all','btn-collapse-all','btn-reset-view','btn-export'].forEach(id => document.getElementById(id).disabled = false);
+    render();
+    requestAnimationFrame(fitToView);
+  }
+
+  function setAllCollapsed(node, val){
+    if (node.children.length){
+      node.collapsed = val;
+      node.children.forEach(c => setAllCollapsed(c, val));
+    }
+  }
+
+  // ---------------------------------------------------------------
+  // UI wiring
+  // ---------------------------------------------------------------
+  const fileInput = document.getElementById('file-input');
+  document.getElementById('btn-open').onclick = () => fileInput.click();
+  document.getElementById('btn-open-2').onclick = () => fileInput.click();
+  fileInput.addEventListener('change', (ev) => {
+    const f = ev.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => buildFromMarkdown(reader.result, f.name.replace(/\.(md|markdown|txt)$/i,''));
+    reader.readAsText(f, 'UTF-8');
+  });
+
+  // drag & drop onto whole canvas area
+  const wrapEl = document.getElementById('canvas-wrap');
+  const dropHint = document.getElementById('drop-hint');
+  ['dragenter','dragover'].forEach(evt => wrapEl.addEventListener(evt, (e) => {
+    e.preventDefault(); dropHint.classList.add('drag-over');
+  }));
+  ['dragleave','drop'].forEach(evt => wrapEl.addEventListener(evt, (e) => {
+    e.preventDefault(); dropHint.classList.remove('drag-over');
+  }));
+  wrapEl.addEventListener('drop', (e) => {
+    const f = e.dataTransfer.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => buildFromMarkdown(reader.result, f.name.replace(/\.(md|markdown|txt)$/i,''));
+    reader.readAsText(f, 'UTF-8');
+  });
+
+  // text input panel
+  const textPanel = document.getElementById('text-panel');
+  function openTextPanel(){ textPanel.classList.add('open'); document.getElementById('md-textarea').focus(); }
+  function closeTextPanel(){ textPanel.classList.remove('open'); }
+  document.getElementById('btn-text').onclick = openTextPanel;
+  document.getElementById('tp-close').onclick = closeTextPanel;
+  document.getElementById('tp-cancel').onclick = closeTextPanel;
+  document.getElementById('tp-apply').onclick = () => {
+    const txt = document.getElementById('md-textarea').value;
+    if (txt.trim()){
+      buildFromMarkdown(txt, 'テキスト入力');
+      closeTextPanel();
+    }
+  };
+
+  // sample
+  const SAMPLE = `# BIM推進ロードマップ
+## 設計
+- 意匠・構造・設備モデルの統合ルール
+- ファミリ共通ライブラリの整備
+- テンプレートの標準化
+## 生産設計連携
+- 部材ごとの調整ルール策定
+- 数量算出の自動化
+- 干渉チェックフローの確立
+## 施工
+### 現場活用
+- 進捗管理へのBIM活用
+- 施工手順シミュレーション
+### 品質管理
+- 検査記録のデジタル化
+- 手戻り削減の仕組み
+## 教育・展開
+- 若手向け研修プログラム
+- 他部署への横展開
+- 外部パートナーとの連携`;
+
+  document.getElementById('btn-sample').onclick = () => buildFromMarkdown(SAMPLE, 'サンプル: BIM推進ロードマップ');
+  document.getElementById('btn-sample-2').onclick = () => buildFromMarkdown(SAMPLE, 'サンプル: BIM推進ロードマップ');
+
+  // expand / collapse all
+  document.getElementById('btn-expand-all').onclick = () => {
+    setAllCollapsed(root, false);
+    layoutTree(root);
+    render(document.getElementById('search-input').value);
+  };
+  document.getElementById('btn-collapse-all').onclick = () => {
+    root.children.forEach(c => setAllCollapsed(c, true));
+    layoutTree(root);
+    render(document.getElementById('search-input').value);
+  };
+  document.getElementById('btn-reset-view').onclick = fitToView;
+
+  // search
+  document.getElementById('search-input').addEventListener('input', (ev) => {
+    render(ev.target.value);
+  });
+
+  // export SVG
+  document.getElementById('btn-export').onclick = () => {
+    const clone = svg.cloneNode(true);
+    clone.setAttribute('xmlns', SVGNS);
+    clone.style.background = '#0a0f1a';
+    const serializer = new XMLSerializer();
+    let src = serializer.serializeToString(clone);
+    src = '<?xml version="1.0" standalone="no"?>\n' + src;
+    const blob = new Blob([src], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (sourceLabel || 'mindmap') + '.svg';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  window.addEventListener('resize', () => { if (root) applyTransform(); });
+
+})();
+</script>
+</body>
+</html>
