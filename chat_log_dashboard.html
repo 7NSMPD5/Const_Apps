@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>チャット活動ログ — 蓄積ダッシュボード</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Share+Tech+Mono&display=swap');
+  :root {
+    --bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:#2a3348;
+    --accent:#65d4dd;--text:#d4dbe8;--text-mute:#6b7a99;
+    --teal:#65d4dd;--purple:#9b8fe8;--coral:#e87c65;--green:#6dcc8a;--amber:#e8c96d;
+    --mono:'Share Tech Mono',monospace;--sans:'Noto Sans JP',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.7;
+    background-image:linear-gradient(rgba(101,212,221,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(101,212,221,0.03) 1px,transparent 1px);
+    background-size:40px 40px; min-height:100vh}
+  main{max-width:1100px;margin:0 auto;padding:40px 24px 80px}
+  header{margin-bottom:24px}
+  .eyebrow{font-family:var(--mono);color:var(--accent);font-size:12px;letter-spacing:0.1em;margin-bottom:8px}
+  h1{font-size:24px;font-weight:700;color:#fff;letter-spacing:-0.02em}
+  .sub{color:var(--text-mute);font-size:12.5px;margin-top:8px;line-height:1.7}
+
+  /* ---- folder / load controls ---- */
+  .load-panel{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin:24px 0;
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .btn{font-family:var(--sans);font-size:13px;font-weight:500;padding:9px 16px;border-radius:8px;border:1px solid var(--border);
+    background:var(--bg3);color:var(--text);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn-primary{background:rgba(101,212,221,0.12);border-color:rgba(101,212,221,0.4);color:var(--accent)}
+  .btn-primary:hover{background:rgba(101,212,221,0.2)}
+  .btn:disabled{opacity:0.4;cursor:not-allowed}
+  .btn:disabled:hover{border-color:var(--border);color:var(--text)}
+  #drop-zone{flex:1;min-width:220px;border:1px dashed var(--border);border-radius:8px;padding:9px 14px;
+    font-family:var(--mono);font-size:11.5px;color:var(--text-mute);text-align:center;transition:all .15s}
+  #drop-zone.dragover{border-color:var(--accent);color:var(--accent);background:rgba(101,212,221,0.06)}
+  .load-status{font-family:var(--mono);font-size:11px;color:var(--text-mute);width:100%;margin-top:4px}
+  .load-status.ok{color:var(--green)}
+  .load-status.err{color:var(--coral)}
+  input[type=file]{display:none}
+
+  /* ---- prompt panel ---- */
+  .prompt-panel{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:24px}
+  .prompt-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer}
+  .prompt-head h2{font-size:14px;color:#fff;border:none;margin:0;padding:0;display:flex;align-items:center;gap:8px}
+  .prompt-toggle{font-family:var(--mono);font-size:11px;color:var(--text-mute)}
+  .prompt-body{display:none}
+  .prompt-body.open{display:block}
+  .prompt-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+  .ptab{font-family:var(--mono);font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);
+    background:var(--bg3);color:var(--text-mute);cursor:pointer}
+  .ptab.active{color:var(--accent);border-color:var(--accent)}
+  textarea.prompt-text{width:100%;min-height:220px;background:#0a0d14;border:1px solid var(--border);border-radius:8px;
+    color:var(--text);font-family:var(--mono);font-size:11.5px;line-height:1.7;padding:14px;resize:vertical}
+  .copy-row{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+  .copy-msg{font-family:var(--mono);font-size:11px;color:var(--green);align-self:center;opacity:0;transition:opacity .2s}
+  .copy-msg.show{opacity:1}
+
+  /* ---- filters ---- */
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0 18px;align-items:center}
+  .search{flex:1;min-width:200px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);
+    padding:9px 14px;font-family:var(--sans);font-size:13px}
+  .search:focus{outline:none;border-color:var(--accent)}
+  select.filter-select{background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);
+    padding:9px 12px;font-family:var(--sans);font-size:12.5px}
+  .tag-chip{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);
+    color:var(--text-mute);cursor:pointer;background:var(--bg2);user-select:none}
+  .tag-chip.active{color:var(--accent);border-color:var(--accent)}
+
+  h2.section-title{font-size:15px;font-weight:700;color:#fff;margin:30px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:10px}
+  .count{font-family:var(--mono);font-size:11px;color:var(--text-mute);font-weight:400}
+
+  /* ---- timeline / cards ---- */
+  .timeline{display:flex;flex-direction:column;gap:10px}
+  .chat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;cursor:pointer;transition:border-color .15s}
+  .chat-card:hover{border-color:var(--accent)}
+  .chat-card.hidden{display:none}
+  .cc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .cc-date{font-family:var(--mono);font-size:11px;color:var(--accent);white-space:nowrap;margin-top:2px}
+  .cc-title{font-weight:700;font-size:14px;color:#fff;line-height:1.5}
+  .cc-project{font-size:11px;color:var(--purple);font-family:var(--mono);margin-top:3px}
+  .cc-author{font-size:10.5px;color:var(--text-mute);font-family:var(--mono);margin-top:4px;white-space:nowrap}
+  .cc-summary{font-size:12.5px;color:var(--text);margin-top:8px;line-height:1.6}
+  .cc-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .cc-tag{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(101,212,221,0.1);color:var(--teal)}
+  .cc-meta-row{display:flex;gap:14px;margin-top:10px;font-family:var(--mono);font-size:10.5px;color:var(--text-mute)}
+  .cc-meta-row span.warn{color:var(--coral)}
+  .cc-meta-row span.ok{color:var(--green)}
+
+  .empty{color:var(--text-mute);font-size:13px;padding:40px 0;text-align:center;font-family:var(--mono)}
+
+  /* ---- detail modal ---- */
+  .overlay{display:none;position:fixed;inset:0;background:rgba(6,8,14,0.75);z-index:50;padding:40px 20px;overflow-y:auto}
+  .overlay.open{display:block}
+  .modal{max-width:720px;margin:0 auto;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px 30px}
+  .modal-close{float:right;background:none;border:none;color:var(--text-mute);font-size:18px;cursor:pointer;font-family:var(--mono)}
+  .modal-close:hover{color:var(--accent)}
+  .modal h3{font-size:18px;color:#fff;margin-bottom:4px;padding-right:30px}
+  .modal .m-date{font-family:var(--mono);font-size:11px;color:var(--accent);margin-bottom:2px}
+  .modal .m-project{font-family:var(--mono);font-size:11.5px;color:var(--purple);margin-bottom:16px}
+  .modal h4{font-size:12px;color:var(--accent);font-family:var(--mono);letter-spacing:0.04em;margin:20px 0 8px;
+    padding-bottom:6px;border-bottom:1px solid var(--border)}
+  .modal p{font-size:13px;color:var(--text);line-height:1.7}
+  .modal ul{padding-left:18px;margin-top:4px}
+  .modal li{font-size:12.5px;color:var(--text);line-height:1.9}
+  .modal li.issue{color:var(--coral)}
+  .modal li.next{color:var(--teal)}
+  .out-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin:6px 0;font-size:12px}
+  .out-item .ot{font-family:var(--mono);font-size:10px;color:var(--amber);text-transform:uppercase;margin-right:8px}
+  .out-item .ofn{color:#fff}
+  .out-item .oloc{font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:3px;word-break:break-all}
+
+  .howto{font-family:var(--mono);font-size:11px;color:var(--text-mute);background:var(--bg2);border:1px dashed var(--border);
+    border-radius:8px;padding:14px 18px;margin-top:40px;line-height:1.9}
+  .howto strong{color:var(--accent)}
+  .badge-count{font-family:var(--mono);font-size:11px;background:var(--bg3);color:var(--text-mute);padding:2px 8px;border-radius:10px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">CHAT LOG ARCHIVE</div>
+    <h1>チャット活動ログ — 蓄積ダッシュボード</h1>
+    <div class="sub">各チャットで検討した内容・作成したアウトプット・残課題を蓄積フォルダのJSONから読み込んで一覧表示します。</div>
+  </header>
+
+  <div class="load-panel">
+    <button class="btn btn-primary" id="btn-pick-folder">📁 フォルダを選択して読込</button>
+    <button class="btn" id="btn-pick-files">＋ ファイルを選択して読込</button>
+    <button class="btn" id="btn-refresh" disabled>🔄 更新</button>
+    <div id="drop-zone">またはこの枠にJSONファイル（複数可）をドラッグ&ドロップ</div>
+    <input type="file" id="file-input" multiple accept=".json">
+    <div class="load-status" id="load-status">未読込 — フォルダまたはファイルを選択してください</div>
+  </div>
+
+  <div class="prompt-panel">
+    <div class="prompt-head" id="prompt-toggle-head">
+      <h2>📋 チャット蓄積用プロンプト（コピーしてチャット末尾で使用）</h2>
+      <span class="prompt-toggle" id="prompt-toggle-icon">▼ 開く</span>
+    </div>
+    <div class="prompt-body" id="prompt-body">
+      <div class="prompt-tabs">
+        <div class="ptab active" data-tab="ja">通常版</div>
+        <div class="ptab" data-tab="short">簡易版（短いチャット用）</div>
+      </div>
+      <textarea class="prompt-text" id="prompt-ja" readonly></textarea>
+      <textarea class="prompt-text" id="prompt-short" readonly style="display:none"></textarea>
+      <div class="copy-row">
+        <span class="copy-msg" id="copy-msg">✓ コピーしました</span>
+        <button class="btn btn-primary" id="btn-copy">📋 クリップボードにコピー</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <input class="search" id="search" type="text" placeholder="タイトル・要約・タグで検索...">
+    <select class="filter-select" id="project-filter"><option value="all">全プロジェクト</option></select>
+    <select class="filter-select" id="author-filter"><option value="all">全アカウント</option></select>
+    <select class="filter-select" id="sort-select">
+      <option value="date-desc">新しい順</option>
+      <option value="date-asc">古い順</option>
+    </select>
+  </div>
+  <div class="filters" id="tag-chips"></div>
+
+  <h2 class="section-title">チャット一覧 <span class="count" id="result-count"></span></h2>
+  <div class="timeline" id="timeline"></div>
+  <div class="empty" id="empty-msg" style="display:none">読み込まれたチャットログがありません</div>
+
+  <div class="howto">
+    <strong>使い方：</strong><br>
+    1. 各チャットの最後に、上の「チャット蓄積用プロンプト」をコピーして貼り付け、生成AIチャットに出力させたJSONを保存（ファイル名は自由、例: chat_20260811_paua-phase1.json）。<br>
+    2. 保存先は毎回同じフォルダ（蓄積フォルダ）にする。<br>
+    3. このHTMLで「📁 フォルダを選択して読込」→ 次回以降は「🔄 更新」ボタンで最新状態を再読込（対応ブラウザ: Chrome / Edge）。<br>
+    4. フォルダ選択に対応していないブラウザでは「＋ ファイルを選択して読込」またはドラッグ&ドロップで複数JSONをまとめて読込可能。<br>
+    5. 同じ chat_id のファイルが複数ある場合は、date（更新日時）が新しい方を優先して表示します。<br>
+    6. 誰のチャットかを追うため、JSONの author に担当者名を入れてください（生成AIチャットが自動で書けない場合は保存前に手動で追記、またはファイル名に担当者名を含めて自分ルールで管理してもOK）。画面右上の「全アカウント」プルダウンで絞り込めます。
+  </div>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+/* ============ プロンプトテンプレート ============ */
+const PROMPT_JA = `このチャットで検討した内容を、後で横断的に検索・参照できるように記録用JSONとして出力してください。
+出力は説明文なしで、下記フォーマットのJSONコードブロックのみにしてください。
+
+# フォーマット
+{
+  "chat_id": "YYYY-MM-DD-短い英語スラッグ（例: 2026-08-11-paua-phase1-drift-pin）",
+  "date": "YYYY-MM-DD",
+  "author": "このチャットを行ったアカウント名・担当者名（わかる範囲で。不明なら空文字でよい）",
+  "project": "このチャットが属するプロジェクト名（例: P&UA木造加工図自動化 / 図面読取AIシステム / 意匠-生産モデル連携 / Revit AIアシスタントPoC / その他は自由記述）",
+  "chat_title": "このチャットの内容を表す短いタイトル（20〜30字程度）",
+  "summary": "このチャットで何を検討し何が決まったか、3〜4文程度で要約",
+  "topics_discussed": ["議論したトピックを箇条書きで（3〜6個）"],
+  "systems_or_tools": [
+    {"name": "対象のアダプター/システム名", "status": "planned|poc|beta|production", "note": "このチャットでの変更点・進捗の要約"}
+  ],
+  "outputs": [
+    {"type": "py|html|pptx|docx|xlsx|addin|other", "filename": "ファイル名", "location": "保存先パスやURL（わかれば）", "note": "内容の一言説明"}
+  ],
+  "open_issues": ["未解決の課題・懸念事項を箇条書きで"],
+  "next_actions": ["次にやるべきことを箇条書きで"],
+  "related_chat_ids": ["関連する過去チャットのchat_idがあれば（なければ空配列）"],
+  "tags": ["検索用タグ（プロジェクト名、技術要素、フェーズ名など自由に）"]
+}
+
+# 注意
+- このチャットで具体的なファイル成果物を作らなかった場合は outputs を空配列にしてください。
+- systems_or_tools は該当が無ければ空配列で構いません。
+- 事実に基づき、推測や誇張を避けて簡潔に記載してください。`;
+
+const PROMPT_SHORT = `このチャットの内容を、以下の簡易JSON形式だけで出力してください（説明文不要、コードブロックのみ）。
+{
+  "chat_id": "YYYY-MM-DD-短い英語スラッグ",
+  "date": "YYYY-MM-DD",
+  "author": "担当者名",
+  "project": "プロジェクト名",
+  "chat_title": "短いタイトル",
+  "summary": "2〜3文の要約",
+  "topics_discussed": [],
+  "systems_or_tools": [],
+  "outputs": [],
+  "open_issues": [],
+  "next_actions": [],
+  "related_chat_ids": [],
+  "tags": []
+}`;
+
+document.getElementById('prompt-ja').value = PROMPT_JA;
+document.getElementById('prompt-short').value = PROMPT_SHORT;
+
+document.getElementById('prompt-toggle-head').addEventListener('click', ()=>{
+  const body = document.getElementById('prompt-body');
+  const icon = document.getElementById('prompt-toggle-icon');
+  const open = body.classList.toggle('open');
+  icon.textContent = open ? '▲ 閉じる' : '▼ 開く';
+});
+
+document.querySelectorAll('.ptab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('prompt-ja').style.display = tab.dataset.tab==='ja' ? 'block':'none';
+    document.getElementById('prompt-short').style.display = tab.dataset.tab==='short' ? 'block':'none';
+  });
+});
+
+document.getElementById('btn-copy').addEventListener('click', async ()=>{
+  const activeTab = document.querySelector('.ptab.active').dataset.tab;
+  const text = activeTab==='ja' ? PROMPT_JA : PROMPT_SHORT;
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch(e){
+    const ta = document.getElementById(activeTab==='ja' ? 'prompt-ja' : 'prompt-short');
+    ta.select(); document.execCommand('copy');
+  }
+  const msg = document.getElementById('copy-msg');
+  msg.classList.add('show');
+  setTimeout(()=>msg.classList.remove('show'), 1800);
+});
+
+/* ============ データ読込 ============ */
+let ENTRIES = []; // 読み込まれた全チャットログ
+let dirHandle = null; // File System Access API 用
+
+const statusEl = document.getElementById('load-status');
+const refreshBtn = document.getElementById('btn-refresh');
+
+function setStatus(msg, cls){
+  statusEl.textContent = msg;
+  statusEl.className = 'load-status' + (cls ? ' '+cls : '');
+}
+
+function normalizeEntry(obj, sourceName){
+  return {
+    chat_id: obj.chat_id || sourceName || ('untitled-' + Math.random().toString(36).slice(2,8)),
+    date: obj.date || '',
+    author: obj.author && String(obj.author).trim() ? String(obj.author).trim() : '不明',
+    project: obj.project || '未分類',
+    chat_title: obj.chat_title || '(タイトル未設定)',
+    summary: obj.summary || '',
+    topics_discussed: Array.isArray(obj.topics_discussed) ? obj.topics_discussed : [],
+    systems_or_tools: Array.isArray(obj.systems_or_tools) ? obj.systems_or_tools : [],
+    outputs: Array.isArray(obj.outputs) ? obj.outputs.filter(o=>o && (o.filename||o.location)) : [],
+    open_issues: Array.isArray(obj.open_issues) ? obj.open_issues : [],
+    next_actions: Array.isArray(obj.next_actions) ? obj.next_actions : [],
+    related_chat_ids: Array.isArray(obj.related_chat_ids) ? obj.related_chat_ids : [],
+    tags: Array.isArray(obj.tags) ? obj.tags : [],
+    _source: sourceName || ''
+  };
+}
+
+function mergeEntries(newList){
+  const map = new Map();
+  [...ENTRIES, ...newList].forEach(e=>{
+    const existing = map.get(e.chat_id);
+    if(!existing || (e.date || '') >= (existing.date || '')){
+      map.set(e.chat_id, e);
+    }
+  });
+  ENTRIES = Array.from(map.values());
+}
+
+async function loadFromDirHandle(handle){
+  const loaded = [];
+  let failCount = 0;
+  for await (const [name, entryHandle] of handle.entries()){
+    if(entryHandle.kind === 'file' && name.toLowerCase().endsWith('.json')){
+      try{
+        const file = await entryHandle.getFile();
+        const text = await file.text();
+        const obj = JSON.parse(text);
+        loaded.push(normalizeEntry(obj, name));
+      }catch(e){ failCount++; }
+    }
+  }
+  return {loaded, failCount};
+}
+
+function loadFromFileList(files){
+  return new Promise((resolve)=>{
+    const loaded = [];
+    let remaining = files.length;
+    let failCount = 0;
+    if(remaining === 0){ resolve({loaded, failCount}); return; }
+    Array.from(files).forEach(file=>{
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const obj = JSON.parse(reader.result);
+          loaded.push(normalizeEntry(obj, file.name));
+        }catch(e){ failCount++; }
+        remaining--;
+        if(remaining === 0) resolve({loaded, failCount});
+      };
+      reader.onerror = ()=>{
+        failCount++; remaining--;
+        if(remaining === 0) resolve({loaded, failCount});
+      };
+      reader.readAsText(file);
+    });
+  });
+}
+
+async function refreshFromFolder(){
+  if(!dirHandle) return;
+  setStatus('読込中...', '');
+  try{
+    const {loaded, failCount} = await loadFromDirHandle(dirHandle);
+    mergeEntries(loaded);
+    render();
+    setStatus(`✓ ${loaded.length}件のJSONを読込（フォルダ: ${dirHandle.name}）` + (failCount ? ` / ${failCount}件は解析失敗` : ''), failCount ? 'err' : 'ok');
+  }catch(e){
+    setStatus('読込エラー: ' + e.message, 'err');
+  }
+}
+
+document.getElementById('btn-pick-folder').addEventListener('click', async ()=>{
+  if(!window.showDirectoryPicker){
+    setStatus('このブラウザはフォルダ選択に対応していません。「ファイルを選択」またはドラッグ&ドロップをご利用ください。', 'err');
+    return;
+  }
+  try{
+    dirHandle = await window.showDirectoryPicker();
+    refreshBtn.disabled = false;
+    await refreshFromFolder();
+  }catch(e){
+    // ユーザーがキャンセルした場合など
+  }
+});
+
+refreshBtn.addEventListener('click', refreshFromFolder);
+
+document.getElementById('btn-pick-files').addEventListener('click', ()=>{
+  document.getElementById('file-input').click();
+});
+
+document.getElementById('file-input').addEventListener('change', async (e)=>{
+  const {loaded, failCount} = await loadFromFileList(e.target.files);
+  mergeEntries(loaded);
+  render();
+  setStatus(`✓ ${loaded.length}件のJSONを読込（ファイル選択）` + (failCount ? ` / ${failCount}件は解析失敗` : ''), failCount ? 'err' : 'ok');
+  e.target.value = '';
+});
+
+const dropZone = document.getElementById('drop-zone');
+['dragenter','dragover'].forEach(ev=>{
+  dropZone.addEventListener(ev, (e)=>{ e.preventDefault(); dropZone.classList.add('dragover'); });
+});
+['dragleave','drop'].forEach(ev=>{
+  dropZone.addEventListener(ev, (e)=>{ e.preventDefault(); dropZone.classList.remove('dragover'); });
+});
+dropZone.addEventListener('drop', async (e)=>{
+  const files = Array.from(e.dataTransfer.files).filter(f=>f.name.toLowerCase().endsWith('.json'));
+  if(files.length === 0){ setStatus('JSONファイルが見つかりませんでした', 'err'); return; }
+  const {loaded, failCount} = await loadFromFileList(files);
+  mergeEntries(loaded);
+  render();
+  setStatus(`✓ ${loaded.length}件のJSONを読込（ドラッグ&ドロップ）` + (failCount ? ` / ${failCount}件は解析失敗` : ''), failCount ? 'err' : 'ok');
+});
+
+/* ============ 表示・フィルタ ============ */
+let activeProject = 'all';
+let activeAuthor = 'all';
+let activeTags = new Set();
+const searchInput = document.getElementById('search');
+const projectFilter = document.getElementById('project-filter');
+const authorFilter = document.getElementById('author-filter');
+const sortSelect = document.getElementById('sort-select');
+
+function statusLabel(s){
+  return {planned:'計画中', poc:'PoC', beta:'テスト中', production:'実運用中'}[s] || s || '';
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function render(){
+  // プロジェクトフィルタの選択肢を更新
+  const projects = Array.from(new Set(ENTRIES.map(e=>e.project))).sort();
+  const currentVal = projectFilter.value;
+  projectFilter.innerHTML = '<option value="all">全プロジェクト</option>' +
+    projects.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+  if(projects.includes(currentVal)) projectFilter.value = currentVal;
+
+  // アカウント(author)フィルタの選択肢を更新
+  const authors = Array.from(new Set(ENTRIES.map(e=>e.author))).sort();
+  const currentAuthorVal = authorFilter.value;
+  authorFilter.innerHTML = '<option value="all">全アカウント</option>' +
+    authors.map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+  if(authors.includes(currentAuthorVal)) authorFilter.value = currentAuthorVal;
+
+  // タグチップを更新
+  const allTags = Array.from(new Set(ENTRIES.flatMap(e=>e.tags))).sort();
+  const tagChipsEl = document.getElementById('tag-chips');
+  tagChipsEl.innerHTML = allTags.map(t=>
+    `<div class="tag-chip ${activeTags.has(t)?'active':''}" data-tag="${escapeHtml(t)}">#${escapeHtml(t)}</div>`
+  ).join('');
+  tagChipsEl.querySelectorAll('.tag-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      const t = chip.dataset.tag;
+      if(activeTags.has(t)) activeTags.delete(t); else activeTags.add(t);
+      render();
+    });
+  });
+
+  applyFilter();
+}
+
+function applyFilter(){
+  const q = searchInput.value.trim().toLowerCase();
+  activeProject = projectFilter.value;
+  activeAuthor = authorFilter.value;
+  const sortMode = sortSelect.value;
+
+  let filtered = ENTRIES.filter(e=>{
+    const matchesProject = activeProject === 'all' || e.project === activeProject;
+    const matchesAuthor = activeAuthor === 'all' || e.author === activeAuthor;
+    const matchesTags = activeTags.size === 0 || e.tags.some(t=>activeTags.has(t));
+    const haystack = (e.chat_title+' '+e.summary+' '+e.tags.join(' ')+' '+e.project+' '+e.author).toLowerCase();
+    const matchesSearch = !q || haystack.includes(q);
+    return matchesProject && matchesAuthor && matchesTags && matchesSearch;
+  });
+
+  filtered.sort((a,b)=>{
+    if(sortMode === 'date-desc') return (b.date||'').localeCompare(a.date||'');
+    return (a.date||'').localeCompare(b.date||'');
+  });
+
+  document.getElementById('result-count').textContent = `(${filtered.length} / ${ENTRIES.length})`;
+  document.getElementById('empty-msg').style.display = filtered.length === 0 ? 'block' : 'none';
+
+  const timeline = document.getElementById('timeline');
+  timeline.innerHTML = filtered.map((e, idx)=>{
+    const originalIdx = ENTRIES.indexOf(e);
+    const outCount = e.outputs.length;
+    const issueCount = e.open_issues.length;
+    return `
+    <div class="chat-card" data-idx="${originalIdx}">
+      <div class="cc-head">
+        <div>
+          <div class="cc-title">${escapeHtml(e.chat_title)}</div>
+          <div class="cc-project">${escapeHtml(e.project)}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="cc-date">${escapeHtml(e.date)}</div>
+          <div class="cc-author">👤 ${escapeHtml(e.author)}</div>
+        </div>
+      </div>
+      <div class="cc-summary">${escapeHtml(e.summary)}</div>
+      <div class="cc-tags">${e.tags.map(t=>`<span class="cc-tag">#${escapeHtml(t)}</span>`).join('')}</div>
+      <div class="cc-meta-row">
+        <span>成果物: ${outCount}</span>
+        <span class="${issueCount>0?'warn':''}">未解決課題: ${issueCount}</span>
+        <span>次アクション: ${e.next_actions.length}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  timeline.querySelectorAll('.chat-card').forEach(card=>{
+    card.addEventListener('click', ()=>openModal(ENTRIES[parseInt(card.dataset.idx)]));
+  });
+}
+
+searchInput.addEventListener('input', applyFilter);
+projectFilter.addEventListener('change', applyFilter);
+authorFilter.addEventListener('change', applyFilter);
+sortSelect.addEventListener('change', applyFilter);
+
+/* ============ 詳細モーダル ============ */
+function openModal(e){
+  const modal = document.getElementById('modal-content');
+  modal.innerHTML = `
+    <button class="modal-close" id="modal-close-btn">✕ 閉じる</button>
+    <div class="m-date">${escapeHtml(e.date)} ・ 👤 ${escapeHtml(e.author)}</div>
+    <h3>${escapeHtml(e.chat_title)}</h3>
+    <div class="m-project">${escapeHtml(e.project)}</div>
+    <p>${escapeHtml(e.summary)}</p>
+
+    ${e.topics_discussed.length ? `<h4>議論したトピック</h4><ul>${e.topics_discussed.map(t=>`<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
+
+    ${e.systems_or_tools.length ? `<h4>関連システム・アダプター</h4><ul>${e.systems_or_tools.map(s=>`<li><strong>${escapeHtml(s.name||'')}</strong>${s.status?` — ${statusLabel(s.status)}`:''}${s.note?` : ${escapeHtml(s.note)}`:''}</li>`).join('')}</ul>` : ''}
+
+    ${e.outputs.length ? `<h4>アウトプット</h4>${e.outputs.map(o=>`
+      <div class="out-item">
+        <span class="ot">${escapeHtml(o.type||'')}</span><span class="ofn">${escapeHtml(o.filename||'(無題)')}</span>
+        ${o.note?`<div style="color:var(--text-mute);margin-top:3px">${escapeHtml(o.note)}</div>`:''}
+        ${o.location?`<div class="oloc">${escapeHtml(o.location)}</div>`:''}
+      </div>`).join('')}` : ''}
+
+    ${e.open_issues.length ? `<h4>未解決の課題</h4><ul>${e.open_issues.map(i=>`<li class="issue">${escapeHtml(i)}</li>`).join('')}</ul>` : ''}
+
+    ${e.next_actions.length ? `<h4>次のアクション</h4><ul>${e.next_actions.map(i=>`<li class="next">${escapeHtml(i)}</li>`).join('')}</ul>` : ''}
+
+    ${e.related_chat_ids.length ? `<h4>関連チャット</h4><ul>${e.related_chat_ids.map(i=>`<li>${escapeHtml(i)}</li>`).join('')}</ul>` : ''}
+
+    <h4>メタ情報</h4>
+    <p style="font-family:var(--mono);font-size:11px;color:var(--text-mute)">chat_id: ${escapeHtml(e.chat_id)}${e._source?` / ファイル: ${escapeHtml(e._source)}`:''}</p>
+  `;
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+}
+
+function closeModal(){
+  document.getElementById('overlay').classList.remove('open');
+}
+
+document.getElementById('overlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'overlay') closeModal();
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape') closeModal();
+});
+
+render();
+</script>
+</body>
+</html>
